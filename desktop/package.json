@@ -1,0 +1,32 @@
+{
+  "name": "scanpilot-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"electron .\"",
+    "dev:renderer": "vite",
+    "build": "tsc && vite build && tsc -p tsconfig.electron.json",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "latest",
+    "@vitejs/plugin-react": "latest",
+    "electron": "latest",
+    "konva": "^10.3.0",
+    "lucide-react": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "react-konva": "^19.2.5",
+    "tailwindcss": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "concurrently": "latest",
+    "typescript": "latest"
+  }
+}

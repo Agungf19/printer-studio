@@ -1,0 +1,10 @@
+{
+  "name": "Preset Baru",
+  "target_size_kb": 1000,
+  "output_format": "PNG",
+  "quality": "Auto",
+  "dpi": 300,
+  "color_mode": "Color",
+  "paper_size": "A4",
+  "ocr_language": "ind+eng"
+}

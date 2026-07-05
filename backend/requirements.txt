@@ -1,0 +1,10 @@
+fastapi==0.116.1
+uvicorn[standard]==0.35.0
+pydantic==2.11.7
+pywin32==310
+Pillow==11.3.0
+opencv-python==4.11.0.86
+pytesseract==0.3.13
+python-docx==1.2.0
+img2pdf==0.6.1
+pikepdf==9.10.2
