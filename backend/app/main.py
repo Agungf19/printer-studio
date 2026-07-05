@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -14,12 +15,30 @@ from app.api.profiles import router as profiles_router
 from app.api.scanners import router as scanners_router
 from app.api.sharing import router as sharing_router
 
-app = FastAPI(title="ScanPilot Local API", version="0.1.0")
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+)
+
+APP_NAME = "ScanPilot"
+APP_VERSION = "0.1.0"
+
+# Restrict CORS to the local dev server and the packaged Electron origin
+# instead of the previous wide-open "*".
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost",
+    "http://127.0.0.1",
+    "app://.",
+]
+
+app = FastAPI(title=f"{APP_NAME} Local API", version=APP_VERSION)
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
