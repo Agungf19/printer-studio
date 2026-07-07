@@ -15,6 +15,7 @@ build/
 *.spec
 desktop/dist/
 desktop/dist-electron/
+desktop/release/
 *.egg-info/
 .vite/
 

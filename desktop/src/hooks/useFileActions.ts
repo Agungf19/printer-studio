@@ -27,6 +27,16 @@ export type PageImageTransform = {
   rotation: number;
 };
 
+export type CropConfirmPayload = {
+  targetId: string;
+  croppedDataUrl: string;
+  imageTransform?: PageImageTransform;
+  objectTransform?: Pick<
+    CanvasObject,
+    "cx" | "cy" | "width" | "height" | "rotation"
+  >;
+};
+
 export type PageImageFit = "contain" | "cover";
 export type PagePaperOrientation = "portrait" | "landscape";
 export type ExportImageFormat = "png" | "jpg";
@@ -385,15 +395,20 @@ function orderedLayerIds(page: ScannedPage, objects: CanvasObject[]) {
   ];
 }
 
-function paperSizePx(page: ScannedPage) {
+function paperDimensionsMm(page: ScannedPage) {
   const key = (page.paperSize || "A4").toLowerCase().trim();
   const dims = PAPER_MM[key] || PAPER_MM.a4;
   const landscape = page.paperOrientation === "landscape";
   const wmm = landscape ? dims[1] : dims[0];
   const hmm = landscape ? dims[0] : dims[1];
+  return { wmm, hmm };
+}
+
+function paperSizePx(page: ScannedPage, dpi = EXPORT_DPI) {
+  const { wmm, hmm } = paperDimensionsMm(page);
   return {
-    w: Math.round((wmm / MM_PER_INCH) * EXPORT_DPI),
-    h: Math.round((hmm / MM_PER_INCH) * EXPORT_DPI),
+    w: Math.round((wmm / MM_PER_INCH) * dpi),
+    h: Math.round((hmm / MM_PER_INCH) * dpi),
   };
 }
 
@@ -402,8 +417,9 @@ function computeImageBox(
   sw: number,
   sh: number,
   fitMode: PageImageFit = "contain",
+  dpi = EXPORT_DPI,
 ) {
-  const margin = Math.round((4 / MM_PER_INCH) * EXPORT_DPI);
+  const margin = Math.round((4 / MM_PER_INCH) * dpi);
   let x = margin;
   let y = margin;
   let w = sw - margin * 2;
@@ -430,6 +446,92 @@ function computeImageBox(
     w = fw;
   }
   return { x, y, w, h };
+}
+
+export async function renderPagePreview(
+  page: ScannedPage,
+  maxWidth = 260,
+): Promise<string | undefined> {
+  const base = page.dataUrl;
+  if (!base) return undefined;
+  const baseImg = await loadImage(base);
+  if (!baseImg) return base;
+
+  const { wmm } = paperDimensionsMm(page);
+  const dpi = maxWidth / (wmm / MM_PER_INCH);
+  const pagePx = paperSizePx(page, dpi);
+  const img = computeImageBox(
+    baseImg,
+    pagePx.w,
+    pagePx.h,
+    page.imageFit ?? "contain",
+    dpi,
+  );
+  const k = img.w / baseImg.naturalWidth;
+  const canvas = document.createElement("canvas");
+  canvas.width = pagePx.w;
+  canvas.height = pagePx.h;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return base;
+
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  const objects = page.objects ?? [];
+  const baseTransform = page.imageTransform ?? {
+    cx: baseImg.naturalWidth / 2,
+    cy: baseImg.naturalHeight / 2,
+    width: baseImg.naturalWidth,
+    height: baseImg.naturalHeight,
+    rotation: 0,
+  };
+  const objectMap = new Map(objects.map((object) => [object.id, object]));
+  const objectImageMap = new Map<string, HTMLImageElement>();
+
+  const drawBaseImage = () => {
+    ctx.save();
+    ctx.translate(img.x + baseTransform.cx * k, img.y + baseTransform.cy * k);
+    ctx.rotate((baseTransform.rotation * Math.PI) / 180);
+    ctx.drawImage(
+      baseImg,
+      -(baseTransform.width * k) / 2,
+      -(baseTransform.height * k) / 2,
+      baseTransform.width * k,
+      baseTransform.height * k,
+    );
+    ctx.restore();
+  };
+
+  const drawObject = async (obj: CanvasObject) => {
+    let objImg = objectImageMap.get(obj.id);
+    if (!objImg) {
+      objImg = (await loadImage(obj.src)) ?? undefined;
+      if (objImg) objectImageMap.set(obj.id, objImg);
+    }
+    if (!objImg) return;
+    ctx.save();
+    ctx.translate(img.x + obj.cx * k, img.y + obj.cy * k);
+    ctx.rotate((obj.rotation * Math.PI) / 180);
+    ctx.drawImage(
+      objImg,
+      -(obj.width * k) / 2,
+      -(obj.height * k) / 2,
+      obj.width * k,
+      obj.height * k,
+    );
+    ctx.restore();
+  };
+
+  for (const layerId of orderedLayerIds(page, objects)) {
+    if (layerId === BASE_IMAGE_OBJECT_ID) {
+      drawBaseImage();
+      continue;
+    }
+    const obj = objectMap.get(layerId);
+    if (obj) await drawObject(obj);
+  }
+
+  return canvas.toDataURL("image/jpeg", 0.86);
 }
 
 export function applyRotation(

@@ -2,7 +2,6 @@ import {
   Minus,
   Maximize2,
   X,
-  Printer,
   Save,
   Undo2,
   Redo2,
@@ -11,6 +10,7 @@ import {
   Moon,
 } from "lucide-react";
 import { IconOnly } from "./RibbonHelpers";
+import printStudioLogo from "../assets/printstudio-logo-horizontal.svg";
 
 const sp = typeof window !== "undefined" ? window.scanPilot : null;
 
@@ -53,7 +53,7 @@ export default function TitleBar({
   return (
     <header className="ps-titlebar">
       <div className="ps-logo">
-        <Printer size={15} />
+        <img src={printStudioLogo} alt="PrintStudio" />
       </div>
       <div className="ps-quick-access">
         <IconOnly

@@ -1,6 +1,8 @@
 {
   "name": "printstudio-desktop",
-  "version": "0.2.0",
+  "version": "0.2.4",
+  "description": "Desktop app for scan, edit, print, export, and local document sharing.",
+  "author": "PrintStudio",
   "private": true,
   "type": "module",
   "main": "dist-electron/main.js",
@@ -8,12 +10,68 @@
     "dev": "concurrently \"vite\" \"tsc -p tsconfig.electron.json --watch\" \"electron .\"",
     "dev:renderer": "vite",
     "build": "tsc && vite build && tsc -p tsconfig.electron.json",
+    "build:backend": "cd ../backend && python -m PyInstaller --clean --noconfirm --name printstudio-backend --console printstudio_backend.py",
+    "installer": "npm run build:backend && npm run build && electron-builder --win nsis --x64",
     "preview": "vite preview"
+  },
+  "build": {
+    "appId": "com.printstudio.desktop",
+    "productName": "PrintStudio",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "electronDist": "node_modules/electron/dist",
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*",
+      "build/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "build",
+        "to": "build",
+        "filter": [
+          "**/*"
+        ]
+      },
+      {
+        "from": "../backend/dist/printstudio-backend",
+        "to": "backend",
+        "filter": [
+          "**/*"
+        ]
+      }
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/printstudio-icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PrintStudio",
+      "installerIcon": "build/printstudio-icon.ico",
+      "uninstallerIcon": "build/printstudio-icon.ico",
+      "installerHeader": "build/installer-header.bmp",
+      "installerSidebar": "build/installer-sidebar.bmp",
+      "uninstallerSidebar": "build/installer-sidebar.bmp"
+    }
   },
   "dependencies": {
     "@tailwindcss/vite": "latest",
     "@vitejs/plugin-react": "latest",
-    "electron": "latest",
     "konva": "^10.3.0",
     "lucide-react": "latest",
     "react": "latest",
@@ -27,6 +85,8 @@
     "@types/react": "latest",
     "@types/react-dom": "latest",
     "concurrently": "latest",
+    "electron": "latest",
+    "electron-builder": "^26.15.3",
     "typescript": "latest"
   }
 }

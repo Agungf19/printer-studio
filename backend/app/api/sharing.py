@@ -15,6 +15,7 @@ from app.core.sharing_service import SharingService
 from app.core.naps2_service import cleanup_scan_files
 from app.api.printers import _detect_printers
 from app.api.scanners import list_scanners, scan_batch, scan_single_page
+from app.core.paths import shared_print_dir
 from app.schemas.sharing import (
     PairRequest,
     PairResponse,
@@ -37,9 +38,7 @@ from app.schemas.sharing import (
 router = APIRouter(tags=["sharing"])
 sharing_service = SharingService()
 logger = logging.getLogger(__name__)
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
-PRINT_SPOOL_DIR = PROJECT_ROOT / "temp" / "shared-print"
-PRINT_SPOOL_DIR.mkdir(parents=True, exist_ok=True)
+PRINT_SPOOL_DIR = shared_print_dir()
 
 
 @router.get("/sharing/status", response_model=SharingStatusResponse)

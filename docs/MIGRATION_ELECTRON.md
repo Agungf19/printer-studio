@@ -117,7 +117,7 @@ Response:
 {
   "status": "ok",
   "app": "PrintStudio",
-  "version": "0.2.0"
+  "version": "0.2.4"
 }
 ```
 

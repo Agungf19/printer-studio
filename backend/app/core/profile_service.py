@@ -6,7 +6,9 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
-PROFILE_DIR = Path(__file__).resolve().parents[3] / "data" / "profiles"
+from app.core.paths import profile_dir
+
+PROFILE_DIR = profile_dir()
 
 
 @dataclass

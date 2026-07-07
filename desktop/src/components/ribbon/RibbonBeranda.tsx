@@ -38,6 +38,7 @@ interface Props {
   cropMode: boolean;
   onToggleCrop: () => void;
   hasSelection: boolean;
+  canCropSelection: boolean;
   onDuplicate: () => void;
   onDeleteObject: () => void;
   onBringForward: () => void;
@@ -66,6 +67,7 @@ export default function RibbonBeranda({
   cropMode,
   onToggleCrop,
   hasSelection,
+  canCropSelection,
   onDuplicate,
   onDeleteObject,
   onBringForward,
@@ -120,7 +122,7 @@ export default function RibbonBeranda({
           icon={Crop}
           label="Pangkas"
           primary={cropMode}
-          disabled={!hasPage}
+          disabled={!hasPage || (!cropMode && !canCropSelection)}
           onClick={onToggleCrop}
         />
       </RibbonGroup>

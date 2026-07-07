@@ -11,6 +11,7 @@ import {
 import type Konva from "konva";
 import type {
   CanvasObject,
+  CropConfirmPayload,
   PageImageFit,
   PageImageTransform,
   ScannedPage,
@@ -26,10 +27,7 @@ interface KonvaCanvasProps {
   orientation?: "auto" | "portrait" | "landscape";
   onZoomChange?: (zoom: number) => void;
   cropMode?: boolean;
-  onCropConfirm?: (
-    croppedDataUrl: string,
-    imageTransform?: PageImageTransform,
-  ) => void;
+  onCropConfirm?: (payload: CropConfirmPayload) => void;
   onCropCancel?: () => void;
   panMode?: boolean;
   fitNonce?: number;
@@ -209,10 +207,7 @@ interface CanvasPageProps {
   orientation: "auto" | "portrait" | "landscape";
   vp: { w: number; h: number };
   cropMode: boolean;
-  onCropConfirm?: (
-    croppedDataUrl: string,
-    imageTransform?: PageImageTransform,
-  ) => void;
+  onCropConfirm?: (payload: CropConfirmPayload) => void;
   onCropCancel?: () => void;
   imageFit?: PageImageFit;
   imageTransform?: PageImageTransform;
@@ -293,7 +288,16 @@ function CanvasPage({
           rotation: baseTransform.rotation,
         }
       : null;
-  const cropSourceBox = baseDisp
+  function toDisp(o: CanvasObject) {
+    return {
+      cx: (img?.x ?? 0) + o.cx * k,
+      cy: (img?.y ?? 0) + o.cy * k,
+      w: o.width * k,
+      h: o.height * k,
+    };
+  }
+
+  const baseCropBox = baseDisp
     ? {
         x: baseDisp.cx - baseDisp.w / 2,
         y: baseDisp.cy - baseDisp.h / 2,
@@ -306,17 +310,30 @@ function CanvasPage({
           y: img.y,
           w: img.w,
           h: img.h,
-        }
+      }
+    : null;
+  const cropTargetId = selectedIds.length === 1 ? selectedIds[0] : null;
+  const cropObject =
+    cropTargetId && cropTargetId !== BASE_IMAGE_OBJECT_ID
+      ? objects.find((object) => object.id === cropTargetId)
+      : undefined;
+  const cropObjectImage = cropObject ? objImages[cropObject.id] : undefined;
+  const cropObjectBox =
+    cropObject && cropObjectImage
+      ? (() => {
+          const d = toDisp(cropObject);
+          return {
+            x: d.cx - d.w / 2,
+            y: d.cy - d.h / 2,
+            w: d.w,
+            h: d.h,
+          };
+        })()
       : null;
-
-  function toDisp(o: CanvasObject) {
-    return {
-      cx: (img?.x ?? 0) + o.cx * k,
-      cy: (img?.y ?? 0) + o.cy * k,
-      w: o.width * k,
-      h: o.height * k,
-    };
-  }
+  const cropSourceBox =
+    cropTargetId === BASE_IMAGE_OBJECT_ID ? baseCropBox : cropObjectBox;
+  const cropSourceImage =
+    cropTargetId === BASE_IMAGE_OBJECT_ID ? image : cropObjectImage;
 
   useEffect(() => {
     if (
@@ -398,7 +415,8 @@ function CanvasPage({
 
   function doCrop() {
     if (
-      !image ||
+      !cropTargetId ||
+      !cropSourceImage ||
       !crop ||
       !cropSourceBox ||
       crop.w < 10 ||
@@ -416,14 +434,14 @@ function CanvasPage({
     const ssh = Math.max(0, Math.min(1 - sy, rh2));
     if (ssw < 0.01 || ssh < 0.01) return;
     const c = document.createElement("canvas");
-    c.width = Math.round(ssw * image.naturalWidth);
-    c.height = Math.round(ssh * image.naturalHeight);
+    c.width = Math.round(ssw * cropSourceImage.naturalWidth);
+    c.height = Math.round(ssh * cropSourceImage.naturalHeight);
     const ctx = c.getContext("2d");
     if (!ctx) return;
     ctx.drawImage(
-      image,
-      sx * image.naturalWidth,
-      sy * image.naturalHeight,
+      cropSourceImage,
+      sx * cropSourceImage.naturalWidth,
+      sy * cropSourceImage.naturalHeight,
       c.width,
       c.height,
       0,
@@ -431,6 +449,27 @@ function CanvasPage({
       c.width,
       c.height,
     );
+    const croppedDataUrl =
+      cropTargetId === BASE_IMAGE_OBJECT_ID
+        ? c.toDataURL("image/jpeg", 0.92)
+        : c.toDataURL("image/png");
+
+    if (cropTargetId !== BASE_IMAGE_OBJECT_ID) {
+      if (!img || !cropObject) return;
+      onCropConfirm?.({
+        targetId: cropTargetId,
+        croppedDataUrl,
+        objectTransform: {
+          cx: (crop.x + crop.w / 2 - img.x) / k,
+          cy: (crop.y + crop.h / 2 - img.y) / k,
+          width: crop.w / k,
+          height: crop.h / k,
+          rotation: cropObject.rotation,
+        },
+      });
+      return;
+    }
+
     const nextBox = computeImageBoxFromSize(
       c.width,
       c.height,
@@ -440,12 +479,16 @@ function CanvasPage({
       imageFit,
     );
     const nextK = nextBox.w / c.width;
-    onCropConfirm?.(c.toDataURL("image/jpeg", 0.92), {
-      cx: (crop.x + crop.w / 2 - nextBox.x) / nextK,
-      cy: (crop.y + crop.h / 2 - nextBox.y) / nextK,
-      width: crop.w / nextK,
-      height: crop.h / nextK,
-      rotation: baseTransform?.rotation ?? 0,
+    onCropConfirm?.({
+      targetId: cropTargetId,
+      croppedDataUrl,
+      imageTransform: {
+        cx: (crop.x + crop.w / 2 - nextBox.x) / nextK,
+        cy: (crop.y + crop.h / 2 - nextBox.y) / nextK,
+        width: crop.w / nextK,
+        height: crop.h / nextK,
+        rotation: baseTransform?.rotation ?? 0,
+      },
     });
   }
 
@@ -992,6 +1035,9 @@ export default function KonvaCanvas({
             onCropCancel={onCropCancel}
             imageFit={pages[activePageIndex]?.imageFit}
             imageTransform={pages[activePageIndex]?.imageTransform}
+            baseImageLayerIndex={pages[activePageIndex]?.baseImageLayerIndex}
+            objects={pages[activePageIndex]?.objects ?? []}
+            selectedIds={selectedIds}
           />
         </div>
       ) : (

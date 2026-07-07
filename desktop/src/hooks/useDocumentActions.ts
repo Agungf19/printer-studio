@@ -1,10 +1,14 @@
 import type {
+  CropConfirmPayload,
   DocumentState,
-  PageImageTransform,
   PagePaperOrientation,
   ScannedPage,
 } from "./useFileActions";
-import { applyRotation, flattenPage } from "./useFileActions";
+import {
+  BASE_IMAGE_OBJECT_ID,
+  applyRotation,
+  flattenPage,
+} from "./useFileActions";
 import { DEFAULT_DOC_TITLE } from "./useAppState";
 import type { ScanSettings } from "./useAppState";
 
@@ -146,21 +150,39 @@ export function useDocumentActions({
     setActivePageIndex(toIndex);
   }
 
-  function handleCropConfirm(
-    croppedDataUrl: string,
-    imageTransform?: PageImageTransform,
-  ) {
+  function handleCropConfirm(payload: CropConfirmPayload) {
     updateActiveDoc((doc) => ({
       ...doc,
       dirty: true,
       pages: doc.pages.map((p, i) =>
-        i === activePageIndex
-          ? { ...p, dataUrl: croppedDataUrl, imageTransform }
-          : p,
+        i !== activePageIndex
+          ? p
+          : payload.targetId === BASE_IMAGE_OBJECT_ID
+            ? {
+                ...p,
+                dataUrl: payload.croppedDataUrl,
+                imageTransform: payload.imageTransform,
+              }
+            : {
+                ...p,
+                objects: (p.objects ?? []).map((object) =>
+                  object.id === payload.targetId
+                    ? {
+                        ...object,
+                        src: payload.croppedDataUrl,
+                        ...(payload.objectTransform ?? {}),
+                      }
+                    : object,
+                ),
+              },
       ),
     }));
     setCropMode(false);
-    setScanStatus("Halaman dipotong.");
+    setScanStatus(
+      payload.targetId === BASE_IMAGE_OBJECT_ID
+        ? "Gambar dipangkas."
+        : "Objek dipangkas.",
+    );
   }
 
   function handleRemoveDoc(docIndex: number) {

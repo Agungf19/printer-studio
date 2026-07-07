@@ -12,10 +12,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from app.core.paths import sharing_data_dir
+
 logger = logging.getLogger(__name__)
 
-DATA_DIR = Path(__file__).resolve().parents[3] / "data" / "sharing"
-DATA_DIR.mkdir(parents=True, exist_ok=True)
+DATA_DIR = sharing_data_dir()
 
 CLIENTS_FILE = DATA_DIR / "clients.json"
 PERMS_FILE = DATA_DIR / "permissions.json"

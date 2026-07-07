@@ -107,7 +107,7 @@ export default function Backstage({
           icon={Info}
           title="Tentang PrintStudio"
           text={
-            "PrintStudio v0.2.0\n" +
+            "PrintStudio v0.2.4\n" +
             "Aplikasi desktop untuk scan, edit, cetak, ekspor, dan berbagi printer, scanner dan dokumen lokal."
           }
         />

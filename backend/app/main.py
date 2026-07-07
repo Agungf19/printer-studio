@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,6 +14,7 @@ from app.api.profiles import router as profiles_router
 from app.api.scanners import router as scanners_router
 from app.api.sharing import router as sharing_router
 from app.core.naps2_service import clear_scan_dir
+from app.core.paths import scan_dir
 
 logging.basicConfig(
     level=logging.INFO,
@@ -24,7 +24,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 APP_NAME = "PrintStudio"
-APP_VERSION = "0.2.0"
+APP_VERSION = "0.2.4"
 
 # Restrict CORS to the local dev server and the packaged Electron origin
 # instead of the previous wide-open "*".
@@ -34,6 +34,7 @@ ALLOWED_ORIGINS = [
     "http://localhost",
     "http://127.0.0.1",
     "app://.",
+    "null",
 ]
 
 app = FastAPI(title=f"{APP_NAME} Local API", version=APP_VERSION)
@@ -62,9 +63,7 @@ app.include_router(scanners_router)
 app.include_router(profiles_router)
 app.include_router(sharing_router)
 
-project_root = Path(__file__).resolve().parents[2]
-scan_files_dir = project_root / "temp" / "scans"
-scan_files_dir.mkdir(parents=True, exist_ok=True)
+scan_files_dir = scan_dir()
 app.mount("/files/scans", StaticFiles(directory=str(scan_files_dir)), name="scan-files")
 
 

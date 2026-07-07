@@ -19,10 +19,11 @@ import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
+from app.core.paths import scan_dir
+
 logger = logging.getLogger(__name__)
 
-SCAN_DIR = Path(__file__).resolve().parents[3] / "temp" / "scans"
-SCAN_DIR.mkdir(parents=True, exist_ok=True)
+SCAN_DIR = scan_dir()
 
 # Active background ADF scan jobs, keyed by job_id.
 _adf_jobs: dict[str, dict] = {}

@@ -4,19 +4,76 @@ import {
   clipboard,
   dialog,
   ipcMain,
+  Menu,
   nativeImage,
 } from "electron";
+import { spawn, type ChildProcess } from "node:child_process";
+import { existsSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = !app.isPackaged;
+const appIconPath = isDev
+  ? path.join(__dirname, "../build/printstudio-icon.ico")
+  : path.join(process.resourcesPath, "build/printstudio-icon.ico");
+
+app.setAppUserModelId("com.printstudio.desktop");
 
 // Unsaved-changes state reported by the renderer. In ephemeral mode unsaved
 // scans exist only in memory, so we warn before the window is closed.
 let isDirty = false;
 let forceClose = false;
+let backendProcess: ChildProcess | null = null;
+
+function packagedBackendPath() {
+  return path.join(process.resourcesPath, "backend", "printstudio-backend.exe");
+}
+
+function startPackagedBackend() {
+  if (isDev || backendProcess) return;
+
+  const backendPath = packagedBackendPath();
+  if (!existsSync(backendPath)) {
+    dialog.showErrorBox(
+      "Backend tidak ditemukan",
+      `File backend PrintStudio tidak ditemukan:\n${backendPath}`,
+    );
+    return;
+  }
+
+  backendProcess = spawn(backendPath, [], {
+    cwd: path.dirname(backendPath),
+    windowsHide: true,
+    stdio: "ignore",
+    env: {
+      ...process.env,
+      PRINTSTUDIO_USER_DATA_DIR: path.join(app.getPath("userData"), "backend"),
+      PRINTSTUDIO_BACKEND_HOST: "0.0.0.0",
+      PRINTSTUDIO_BACKEND_PORT: "8765",
+    },
+  });
+  backendProcess.unref();
+
+  backendProcess.once("error", (error) => {
+    backendProcess = null;
+    dialog.showErrorBox(
+      "Backend gagal dijalankan",
+      `PrintStudio tidak bisa menjalankan backend lokal:\n${error.message}`,
+    );
+  });
+
+  backendProcess.once("exit", () => {
+    backendProcess = null;
+  });
+}
+
+function stopPackagedBackend() {
+  if (!backendProcess || backendProcess.killed) return;
+  backendProcess.kill();
+  backendProcess = null;
+}
 
 function saveDialogFilters(defaultName?: string) {
   const ext = path.extname(defaultName || "").toLowerCase();
@@ -41,6 +98,8 @@ function createWindow() {
     minWidth: 1100,
     minHeight: 720,
     title: "PrintStudio",
+    icon: appIconPath,
+    autoHideMenuBar: true,
     backgroundColor: "#f3f6fb",
     webPreferences: {
       preload: path.join(__dirname, "preload.cjs"),
@@ -48,6 +107,7 @@ function createWindow() {
       nodeIntegration: false,
     },
   });
+  mainWindow.setMenuBarVisibility(false);
 
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
@@ -154,6 +214,8 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
         width: 900,
         height: 700,
         title: "Pratinjau Cetak — PrintStudio",
+        icon: appIconPath,
+        autoHideMenuBar: true,
         parent: mainWindow,
         webPreferences: {
           preload: path.join(__dirname, "preload.cjs"),
@@ -161,6 +223,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
           nodeIntegration: false,
         },
       });
+      previewWindow.setMenuBarVisibility(false);
       // Load the same content for preview
       if (isDev) {
         previewWindow.loadURL("http://localhost:5173?preview=1");
@@ -239,8 +302,14 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
 }
 
 app.whenReady().then(() => {
+  Menu.setApplicationMenu(null);
+  startPackagedBackend();
   const mainWindow = createWindow();
   setupIpcHandlers(mainWindow);
+});
+
+app.on("before-quit", () => {
+  stopPackagedBackend();
 });
 
 app.on("window-all-closed", () => {

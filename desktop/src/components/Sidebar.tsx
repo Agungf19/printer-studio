@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from "react";
+import { useEffect, useState, type DragEvent } from "react";
 import {
   X,
   ChevronUp,
@@ -8,7 +8,11 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
 } from "lucide-react";
-import type { ScannedPage } from "../hooks/useFileActions";
+import {
+  renderPagePreview,
+  type PagePaperOrientation,
+  type ScannedPage,
+} from "../hooks/useFileActions";
 
 interface SidebarProps {
   open: boolean;
@@ -63,20 +67,34 @@ function SidebarThumbImage({
   paperSize: string;
   orientation: "auto" | "portrait" | "landscape";
 }) {
-  const rotation = page.imageTransform?.rotation ?? 0;
+  const [previewSrc, setPreviewSrc] = useState(page.dataUrl);
+  useEffect(() => {
+    let cancelled = false;
+    const fallbackOrientation: PagePaperOrientation =
+      orientation === "landscape" ? "landscape" : "portrait";
+    const previewPage: ScannedPage = {
+      ...page,
+      paperSize: page.paperSize ?? paperSize,
+      paperOrientation: page.paperOrientation ?? fallbackOrientation,
+    };
+    setPreviewSrc(page.dataUrl);
+    void renderPagePreview(previewPage).then((src) => {
+      if (!cancelled) setPreviewSrc(src ?? page.dataUrl);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [page, paperSize, orientation]);
+
   return (
     <div
       className="ps-sidebar-thumb-preview"
       style={{ aspectRatio: paperAspect(paperSize, orientation) }}
     >
       <img
-        src={page.dataUrl}
+        src={previewSrc}
         alt=""
         draggable={false}
-        style={{
-          objectFit: page.imageFit === "cover" ? "cover" : "contain",
-          transform: `rotate(${rotation}deg)`,
-        }}
       />
     </div>
   );

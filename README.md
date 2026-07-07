@@ -2,9 +2,9 @@
 
 PrintStudio adalah aplikasi desktop Windows untuk scan, edit, cetak, ekspor, kompresi, penggabungan, dan berbagi dokumen secara lokal.
 
-Versi saat ini: `v0.2.0`.
+Versi saat ini: `v0.2.4`.
 
-Rekomendasi format versi: gunakan SemVer `vMAJOR.MINOR.PATCH`, misalnya `v0.2.0`, `v0.2.1`, atau `v1.0.0`.
+Rekomendasi format versi: gunakan SemVer `vMAJOR.MINOR.PATCH`, misalnya `v0.2.4`, `v0.2.5`, atau `v1.0.0`.
 
 ## Tujuan
 

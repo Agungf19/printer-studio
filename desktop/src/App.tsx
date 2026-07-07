@@ -138,6 +138,26 @@ export default function App() {
     };
   }
 
+  const cropTargetId =
+    objEditor.selectedIds.length === 1 ? objEditor.selectedIds[0] : "";
+  const canCropSelection =
+    !!s.activePage?.dataUrl &&
+    objEditor.selectedIds.length === 1 &&
+    (cropTargetId === BASE_IMAGE_OBJECT_ID ||
+      (s.activePage.objects ?? []).some((object) => object.id === cropTargetId));
+
+  function toggleCropMode() {
+    if (s.cropMode) {
+      s.setCropMode(false);
+      return;
+    }
+    if (!canCropSelection) {
+      s.setScanStatus("Pilih satu gambar atau objek dulu.");
+      return;
+    }
+    s.setCropMode(true);
+  }
+
   const activePaperSize = s.activePage?.paperSize ?? s.scanSettings.paperSize;
   const activePaperOrientation =
     s.activePage?.paperOrientation ?? s.scanSettings.orientation;
@@ -604,8 +624,9 @@ export default function App() {
           onOpen={() => void doOpen()}
           onRotate={(deg) => void objEditor.rotateSelected(deg)}
           cropMode={s.cropMode}
-          onToggleCrop={() => s.setCropMode(!s.cropMode)}
+          onToggleCrop={toggleCropMode}
           hasSelection={objEditor.hasSelection}
+          canCropSelection={canCropSelection}
           onDuplicate={objEditor.duplicateSelected}
           onDeleteObject={deleteSelectedOrActivePage}
           onBringForward={objEditor.bringForward}

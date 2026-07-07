@@ -7,11 +7,13 @@ from fastapi import APIRouter, HTTPException
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
+from app.core.paths import scan_dir
+
 router = APIRouter(tags=["export"])
 logger = logging.getLogger(__name__)
 
 # Scan files directory
-SCAN_DIR = Path(__file__).resolve().parents[3] / "temp" / "scans"
+SCAN_DIR = scan_dir()
 
 
 class ExportRequest(BaseModel):

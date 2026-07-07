@@ -96,15 +96,18 @@ select:focus-visible {
   border-bottom: 1px solid var(--border);
 }
 .ps-logo {
-  width: 22px;
-  height: 22px;
+  width: 142px;
+  height: 30px;
   flex: none;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 6px;
-  color: #fff;
-  background: var(--blue);
+  overflow: hidden;
+}
+.ps-logo img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .ps-quick-access {
   display: flex;
@@ -1432,8 +1435,10 @@ select:focus-visible {
   box-shadow: 0 1px 4px var(--shadow);
 }
 .ps-sidebar-thumb-preview img {
+  display: block;
   width: 100%;
   height: 100%;
+  object-fit: cover;
   border-radius: 4px;
   transition: transform 0.15s ease;
 }
