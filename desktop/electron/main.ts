@@ -13,16 +13,37 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const isDev = !app.isPackaged;
 
+// Unsaved-changes state reported by the renderer. In ephemeral mode unsaved
+// scans exist only in memory, so we warn before the window is closed.
+let isDirty = false;
+let forceClose = false;
+
+function saveDialogFilters(defaultName?: string) {
+  const ext = path.extname(defaultName || "").toLowerCase();
+  if (ext === ".pdf") return [{ name: "PDF", extensions: ["pdf"] }];
+  if (ext === ".png") return [{ name: "PNG", extensions: ["png"] }];
+  if (ext === ".jpg" || ext === ".jpeg") {
+    return [{ name: "JPEG", extensions: ["jpg"] }];
+  }
+  if (ext === ".docx") return [{ name: "DOCX", extensions: ["docx"] }];
+  return [
+    { name: "PDF", extensions: ["pdf"] },
+    { name: "PNG", extensions: ["png"] },
+    { name: "JPEG", extensions: ["jpg"] },
+    { name: "DOCX", extensions: ["docx"] },
+  ];
+}
+
 function createWindow() {
   const mainWindow = new BrowserWindow({
     width: 1280,
     height: 820,
     minWidth: 1100,
     minHeight: 720,
-    title: "ScanPilot",
+    title: "PrintStudio",
     backgroundColor: "#f3f6fb",
     webPreferences: {
-      preload: path.join(__dirname, "preload.js"),
+      preload: path.join(__dirname, "preload.cjs"),
       contextIsolation: true,
       nodeIntegration: false,
     },
@@ -47,6 +68,31 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
   });
   ipcMain.on("window:close", () => mainWindow.close());
 
+  // Renderer reports whether any document has unsaved changes.
+  ipcMain.on("app:setDirty", (_event, dirty: boolean) => {
+    isDirty = Boolean(dirty);
+  });
+
+  // Warn before closing when there are unsaved changes.
+  mainWindow.on("close", (event) => {
+    if (!isDirty || forceClose) return;
+    event.preventDefault();
+    const choice = dialog.showMessageBoxSync(mainWindow, {
+      type: "warning",
+      buttons: ["Batal", "Tutup Tanpa Menyimpan"],
+      defaultId: 0,
+      cancelId: 0,
+      title: "Perubahan belum disimpan",
+      message: "Ada dokumen dengan perubahan yang belum disimpan.",
+      detail:
+        "Hasil scan yang belum disimpan akan hilang jika Anda keluar sekarang.",
+    });
+    if (choice === 1) {
+      forceClose = true;
+      mainWindow.close();
+    }
+  });
+
   // File open dialog
   ipcMain.handle("dialog:openFile", async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
@@ -68,12 +114,7 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
     const result = await dialog.showSaveDialog(mainWindow, {
       title: "Simpan Dokumen",
       defaultPath: defaultName || "Dokumen Scan.pdf",
-      filters: [
-        { name: "PDF", extensions: ["pdf"] },
-        { name: "PNG", extensions: ["png"] },
-        { name: "JPEG", extensions: ["jpg"] },
-        { name: "DOCX", extensions: ["docx"] },
-      ],
+      filters: saveDialogFilters(defaultName),
     });
     if (result.canceled) return null;
     return result.filePath;
@@ -112,10 +153,10 @@ function setupIpcHandlers(mainWindow: BrowserWindow) {
       const previewWindow = new BrowserWindow({
         width: 900,
         height: 700,
-        title: "Pratinjau Cetak — ScanPilot",
+        title: "Pratinjau Cetak — PrintStudio",
         parent: mainWindow,
         webPreferences: {
-          preload: path.join(__dirname, "preload.js"),
+          preload: path.join(__dirname, "preload.cjs"),
           contextIsolation: true,
           nodeIntegration: false,
         },

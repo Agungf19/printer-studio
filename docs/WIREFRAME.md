@@ -1,4 +1,4 @@
-# Wireframe Layout ScanPilot
+# Wireframe Layout PrintStudio
 
 Tujuan wireframe ini: merapikan UI sebelum lanjut coding detail. Masalah saat ini: field di panel kanan saling menempel, tombol tidak terbaca jelas, dan banyak group box membuat area terlalu sempit.
 
@@ -16,7 +16,7 @@ Tujuan wireframe ini: merapikan UI sebelum lanjut coding detail. Masalah saat in
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────────────────────┐
-│ ScanPilot                                                                    Status: Ready  │
+│ PrintStudio                                                                    Status: Ready  │
 ├───────────────────────┬─────────────────────────────────────────────────────┬───────────────┤
 │ SIDEBAR               │ MAIN WORKSPACE                                      │ RIGHT PANEL   │
 │                       │                                                     │               │
@@ -62,7 +62,7 @@ Fokus sidebar hanya perangkat dan sharing.
 
 ```text
 ┌───────────────────────┐
-│ ScanPilot             │
+│ PrintStudio             │
 │ Scan, OCR, Export     │
 │                       │
 │ Scanner               │

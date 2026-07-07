@@ -1224,14 +1224,6 @@ select:focus-visible {
   height: 100%;
   overflow: auto;
 }
-.ps-konva-scroll.pan,
-.ps-konva-scroll.pan * {
-  cursor: grab !important;
-}
-.ps-konva-scroll.pan:active,
-.ps-konva-scroll.pan:active * {
-  cursor: grabbing !important;
-}
 .ps-konva-pages {
   display: flex;
   flex-direction: column;
@@ -1522,4 +1514,12 @@ select:focus-visible {
   100% {
     margin-left: 100%;
   }
+}
+
+/* --- Mode geser (pan) kanvas --- */
+.ps-konva-scroll.pan {
+  cursor: grab;
+}
+.ps-konva-scroll.pan:active {
+  cursor: grabbing;
 }

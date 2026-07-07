@@ -89,3 +89,17 @@ export async function handleCut(
     setStatus("Gambar dipotong ke clipboard.");
   }
 }
+
+/**
+ * Baca gambar dari clipboard OS (atau clipboard browser sebagai fallback).
+ * Mengembalikan data URL gambar, atau null bila tidak ada gambar.
+ */
+export async function readClipboardImage(): Promise<string | null> {
+  try {
+    return sp
+      ? await sp.readImageFromClipboard()
+      : await browserReadImageFromClipboard();
+  } catch {
+    return null;
+  }
+}

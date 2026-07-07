@@ -1,4 +1,4 @@
-import { ScanLine, Layers, RefreshCw } from "lucide-react";
+import { ScanLine, Layers, RefreshCw, Network } from "lucide-react";
 import {
   RibbonContent,
   RibbonGroup,
@@ -39,19 +39,20 @@ interface Props {
   scanners: ScannerItem[];
   selectedScannerId: string;
   onSelectScanner: (id: string) => void;
+  onNetworkDevices: () => void;
   paperSizes: PaperSize[];
   scanSettings: ScanSettings;
   onScanSettingsChange: (
     s: ScanSettings | ((prev: ScanSettings) => ScanSettings),
   ) => void;
-  postDeskew: boolean;
-  onPostDeskewChange: (v: boolean) => void;
   isScanning: boolean;
   isRefreshing: boolean;
   onRefresh: () => void;
   onStartScan: () => void;
   onStartMultiScan: () => void;
   hasAdf: boolean;
+  postDeskew: boolean;
+  onPostDeskewChange: (v: boolean) => void;
 }
 
 export default function RibbonPindai({
@@ -59,17 +60,18 @@ export default function RibbonPindai({
   scanners,
   selectedScannerId,
   onSelectScanner,
+  onNetworkDevices,
   paperSizes,
   scanSettings,
   onScanSettingsChange,
-  postDeskew,
-  onPostDeskewChange,
   isScanning,
   isRefreshing,
   onRefresh,
   onStartScan,
   onStartMultiScan,
   hasAdf,
+  postDeskew,
+  onPostDeskewChange,
 }: Props) {
   return (
     <RibbonContent active={active}>
@@ -96,12 +98,19 @@ export default function RibbonPindai({
             />
           ))}
         </div>
-        <RibbonSmall
-          icon={RefreshCw}
-          label="Segarkan"
-          spinning={isRefreshing}
-          onClick={onRefresh}
-        />
+        <div className="ps-small-stack">
+          <RibbonSmall
+            icon={Network}
+            label="Perangkat Jaringan"
+            onClick={onNetworkDevices}
+          />
+          <RibbonSmall
+            icon={RefreshCw}
+            label="Segarkan"
+            spinning={isRefreshing}
+            onClick={onRefresh}
+          />
+        </div>
       </RibbonGroup>
       <RibbonGroup title="Pengaturan">
         <div className="ps-field-grid">
@@ -162,7 +171,7 @@ export default function RibbonPindai({
               )}
             </select>
           </RibbonField>
-          <RibbonField label="Orientasi">
+          <RibbonField label="Orientasi pindai">
             <select
               value={scanSettings.orientation}
               onChange={(e) =>
@@ -177,6 +186,16 @@ export default function RibbonPindai({
               <option value="landscape">Landscape</option>
             </select>
           </RibbonField>
+          <div className="ps-check-stack">
+            <label>
+              <input
+                type="checkbox"
+                checked={postDeskew}
+                onChange={(e) => onPostDeskewChange(e.target.checked)}
+              />{" "}
+              Luruskan otomatis
+            </label>
+          </div>
         </div>
       </RibbonGroup>
       <RibbonGroup title="Aksi">
@@ -193,18 +212,6 @@ export default function RibbonPindai({
           disabled={isScanning}
           onClick={onStartMultiScan}
         />
-      </RibbonGroup>
-      <RibbonGroup title="Pasca-Proses">
-        <div className="ps-check-stack">
-          <label>
-            <input
-              type="checkbox"
-              checked={postDeskew}
-              onChange={(e) => onPostDeskewChange(e.target.checked)}
-            />{" "}
-            Luruskan otomatis (deskew)
-          </label>
-        </div>
       </RibbonGroup>
     </RibbonContent>
   );

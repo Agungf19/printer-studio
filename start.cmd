@@ -1,7 +1,7 @@
 @echo off
-title ScanPilot - Starting...
+title PrintStudio - Starting...
 echo ========================================
-echo   ScanPilot - Starting All Services
+echo   PrintStudio - Starting All Services
 echo ========================================
 echo.
 
@@ -12,12 +12,12 @@ taskkill /F /IM NAPS2.Console.exe >nul 2>&1
 timeout /t 1 /nobreak >nul
 
 :: Start FastAPI backend
-echo [2/4] Starting FastAPI backend (port 8765)...
-start "ScanPilot-Backend" /MIN cmd /c "cd /d %~dp0backend && D:\laragon\bin\python\python-3.10\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8765 --reload"
+echo [2/4] Starting FastAPI backend (LAN port 8765)...
+start "PrintStudio-Backend" /MIN cmd /c "cd /d %~dp0backend && D:\laragon\bin\python\python-3.10\python.exe -m uvicorn app.main:app --host 0.0.0.0 --port 8765 --reload"
 
 :: Start Vite dev server
 echo [3/4] Starting Vite dev server (port 5173)...
-start "ScanPilot-Vite" /MIN cmd /c "cd /d %~dp0desktop && npx vite --port 5173"
+start "PrintStudio-Vite" /MIN cmd /c "cd /d %~dp0desktop && npx vite --port 5173"
 
 :: Wait for Vite to be ready
 echo      Waiting for Vite to be ready...
@@ -29,19 +29,20 @@ echo      Vite ready!
 
 :: Start TypeScript watch
 echo      Starting TypeScript watch...
-start "ScanPilot-TSC" /MIN cmd /c "cd /d %~dp0desktop && npx tsc -p tsconfig.electron.json --watch"
+start "PrintStudio-TSC" /MIN cmd /c "cd /d %~dp0desktop && npx tsc -p tsconfig.electron.json --watch"
 
 :: Wait a bit for everything to settle
 timeout /t 2 /nobreak >nul
 
 :: Start Electron
 echo [4/4] Starting Electron...
-start "ScanPilot-Electron" cmd /c "cd /d %~dp0desktop && npx electron ."
+start "PrintStudio-Electron" cmd /c "cd /d %~dp0desktop && npx electron ."
 
 echo.
 echo ========================================
-echo   ScanPilot is running!
+echo   PrintStudio is running!
 echo   - Backend:  http://127.0.0.1:8765
+echo   - Sharing:  http://IP-PC-HOST:8765/sharing/client
 echo   - Frontend: http://localhost:5173
 echo   - Electron: Desktop window
 echo ========================================
@@ -52,9 +53,9 @@ pause >nul
 echo.
 echo Stopping all services...
 taskkill /F /IM electron.exe >nul 2>&1
-taskkill /F /FI "WINDOWTITLE eq ScanPilot-Backend*" >nul 2>&1
-taskkill /F /FI "WINDOWTITLE eq ScanPilot-Vite*" >nul 2>&1
-taskkill /F /FI "WINDOWTITLE eq ScanPilot-TSC*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq PrintStudio-Backend*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq PrintStudio-Vite*" >nul 2>&1
+taskkill /F /FI "WINDOWTITLE eq PrintStudio-TSC*" >nul 2>&1
 taskkill /F /IM NAPS2.Console.exe >nul 2>&1
 echo All services stopped.
 timeout /t 2 /nobreak >nul

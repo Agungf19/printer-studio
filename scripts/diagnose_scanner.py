@@ -13,8 +13,8 @@ def main() -> int:
     service = Naps2ScannerService()
     devices = service.list_devices()
 
-    print("ScanPilot Scanner Diagnostic")
-    print("============================")
+    print("PrintStudio Scanner Diagnostic")
+    print("==============================")
     print(f"Total scanner ditemukan: {len(devices)}")
 
     if not devices:

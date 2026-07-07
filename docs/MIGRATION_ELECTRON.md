@@ -1,8 +1,8 @@
-# Migrasi ScanPilot ke Electron + React + Python Backend
+# Migrasi PrintStudio ke Electron + React + Python Backend
 
 ## Keputusan
 
-ScanPilot pindah dari UI PySide6 manual ke arsitektur:
+PrintStudio pindah dari UI PySide6 manual ke arsitektur:
 
 - Electron sebagai desktop shell.
 - React + TypeScript + Tailwind sebagai UI.
@@ -28,7 +28,7 @@ Kelebihan stack baru:
 ## Target Arsitektur
 
 ```text
-ScanPilot.exe
+PrintStudio.exe
 │
 ├── Electron main process
 │   ├── membuka window desktop
@@ -116,8 +116,8 @@ Response:
 ```json
 {
   "status": "ok",
-  "app": "ScanPilot",
-  "version": "0.1.0"
+  "app": "PrintStudio",
+  "version": "0.2.0"
 }
 ```
 

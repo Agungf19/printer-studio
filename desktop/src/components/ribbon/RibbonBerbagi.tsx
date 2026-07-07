@@ -1,4 +1,4 @@
-import { Share2, User, Lock, Network, RefreshCw } from "lucide-react";
+import { Share2, User, Lock } from "lucide-react";
 import { RibbonContent, RibbonGroup, RibbonBig } from "../RibbonHelpers";
 
 interface Props {
@@ -6,8 +6,6 @@ interface Props {
   onOpenShare: () => void;
   onOpenPermissions: () => void;
   onOpenPin: () => void;
-  onNetworkDevices: () => void;
-  onRefresh: () => void;
 }
 
 export default function RibbonBerbagi({
@@ -15,8 +13,6 @@ export default function RibbonBerbagi({
   onOpenShare,
   onOpenPermissions,
   onOpenPin,
-  onNetworkDevices,
-  onRefresh,
 }: Props) {
   return (
     <RibbonContent active={active}>
@@ -35,18 +31,6 @@ export default function RibbonBerbagi({
           onClick={onOpenPermissions}
         />
         <RibbonBig icon={Lock} label="Kode PIN" onClick={onOpenPin} />
-      </RibbonGroup>
-      <RibbonGroup title="Status Jaringan">
-        <RibbonBig
-          icon={Network}
-          label="Perangkat Terhubung"
-          onClick={onNetworkDevices}
-        />
-        <RibbonBig
-          icon={RefreshCw}
-          label="Segarkan Jaringan"
-          onClick={onRefresh}
-        />
       </RibbonGroup>
     </RibbonContent>
   );

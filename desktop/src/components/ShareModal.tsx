@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import {
+  Copy,
+  ExternalLink,
   Network,
   Printer,
   ScanLine,
@@ -30,6 +32,7 @@ export default function ShareModal({
   const [pinInfo, setPinInfo] = useState<PinInfo>({ has_pin: false, pin: "" });
   const [selectedDevice, setSelectedDevice] = useState("printer");
   const [loading, setLoading] = useState(false);
+  const [copyStatus, setCopyStatus] = useState("");
 
   useEffect(() => {
     api
@@ -40,6 +43,10 @@ export default function ShareModal({
 
   const isActive = sharing?.is_active ?? false;
   const onlinePrinters = printers.filter((p) => p.status === "online");
+  const clientUrl =
+    sharing?.local_ip && sharing?.port
+      ? `http://${sharing.local_ip}:${sharing.port}/sharing/client`
+      : "";
 
   async function handleToggle() {
     setLoading(true);
@@ -51,6 +58,17 @@ export default function ShareModal({
       }
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function copyClientUrl() {
+    if (!clientUrl) return;
+    try {
+      await navigator.clipboard.writeText(clientUrl);
+      setCopyStatus("Alamat disalin");
+      window.setTimeout(() => setCopyStatus(""), 1800);
+    } catch {
+      setCopyStatus("Gagal menyalin");
     }
   }
 
@@ -70,7 +88,8 @@ export default function ShareModal({
           Bagikan ke Jaringan
         </h2>
         <p className="sub">
-          Bagikan printer/scanner ke komputer lain di jaringan lokal.
+          PC client bisa scan dan mencetak lewat halaman PrintStudio di jaringan
+          lokal.
         </p>
 
         {/* Status */}
@@ -273,6 +292,73 @@ export default function ShareModal({
             <div style={{ color: "#7d7a75", fontSize: 11, marginTop: 4 }}>
               Client: {sharing?.client_count || 0} terhubung
             </div>
+          </div>
+        )}
+
+        {isActive && clientUrl && (
+          <div
+            style={{
+              padding: "10px 14px",
+              borderRadius: 8,
+              background: "var(--soft)",
+              border: "1px solid var(--border)",
+              marginBottom: 14,
+              fontSize: 12.5,
+            }}
+          >
+            <div
+              style={{
+                color: "#7d7a75",
+                fontSize: 11,
+                marginBottom: 6,
+                fontWeight: 600,
+              }}
+            >
+              Alamat untuk PC client
+            </div>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <code
+                style={{
+                  flex: 1,
+                  minWidth: 0,
+                  padding: "7px 9px",
+                  borderRadius: 6,
+                  background: "var(--canvas)",
+                  border: "1px solid var(--border)",
+                  color: "var(--text)",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {clientUrl}
+              </code>
+              <button
+                className="ps-btn-small"
+                title="Salin alamat client"
+                onClick={() => void copyClientUrl()}
+              >
+                <Copy size={13} />
+              </button>
+              <button
+                className="ps-btn-small"
+                title="Buka halaman client"
+                onClick={() => window.open(clientUrl, "_blank")}
+              >
+                <ExternalLink size={13} />
+              </button>
+            </div>
+            {copyStatus && (
+              <div style={{ color: "#46a171", fontSize: 11, marginTop: 6 }}>
+                {copyStatus}
+              </div>
+            )}
           </div>
         )}
 

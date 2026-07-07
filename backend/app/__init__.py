@@ -1,1 +1,1 @@
-"""ScanPilot local backend API."""
+"""PrintStudio local backend API."""

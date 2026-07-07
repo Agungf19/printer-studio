@@ -1,10 +1,10 @@
-# Plan Proyek ScanPilot
+# Plan Proyek PrintStudio
 
 Terakhir diperbarui: 2026-07-03
 
 ## 1. Ringkasan
 
-ScanPilot adalah aplikasi desktop Windows untuk scan dokumen dari printer-scanner multifungsi, memproses hasil scan, mengompres ukuran file, menggabungkan banyak halaman, menjalankan OCR, dan mengekspor hasil ke berbagai format.
+PrintStudio adalah aplikasi desktop Windows untuk scan dokumen dari printer-scanner multifungsi, memproses hasil scan, mengompres ukuran file, menggabungkan banyak halaman, menjalankan OCR, dan mengekspor hasil ke berbagai format.
 
 Target awal adalah scanner Brother dengan ADF/document feeder, lalu dibuat kompatibel dengan scanner Epson, Canon, dan perangkat lain melalui WIA/TWAIN.
 
@@ -26,7 +26,7 @@ PySide6 prototype tetap disimpan sebagai referensi logic awal. UI final dipindah
 
 ## 3. Nama Proyek
 
-Nama aplikasi: `ScanPilot`
+Nama aplikasi: `PrintStudio`
 
 Nama folder: `scanpilot`
 
@@ -255,16 +255,16 @@ Contoh kebutuhan:
 Printer sharing:
 
 - Bisa memakai fitur bawaan Windows Shared Printer.
-- ScanPilot perlu mendeteksi printer network/shared di fase export/print.
-- ScanPilot ditargetkan bisa membantu user awam tanpa membuka Control Panel manual.
+- PrintStudio perlu mendeteksi printer network/shared di fase export/print.
+- PrintStudio ditargetkan bisa membantu user awam tanpa membuka Control Panel manual.
 - Beberapa aksi tetap mungkin butuh izin Administrator Windows.
 
 Scanner sharing:
 
 - Scanner tidak bisa dishare semudah printer via Windows.
 - Arsitektur yang direkomendasikan:
-  - komputer yang terhubung scanner berjalan sebagai `ScanPilot Host`
-  - komputer client menjalankan `ScanPilot Client`
+  - komputer yang terhubung scanner berjalan sebagai `PrintStudio Host`
+  - komputer client menjalankan `PrintStudio Client`
   - client mengirim request scan ke host lewat LAN
   - host melakukan scan lokal lalu mengirim hasil ke client
 - Driver scanner tetap wajib terpasang di komputer host.
@@ -281,24 +281,24 @@ Tahap awal:
 Target fitur:
 
 - User tidak perlu setting manual printer/scanner sharing di Windows.
-- ScanPilot menyediakan wizard sederhana.
+- PrintStudio menyediakan wizard sederhana.
 
 Mode Host:
 
 1. User memilih `Jadikan komputer ini Host`.
-2. ScanPilot cek printer lokal.
-3. ScanPilot cek scanner lokal.
-4. ScanPilot cek IP lokal dan port service.
-5. ScanPilot cek firewall.
-6. ScanPilot menampilkan status siap/tidak siap.
-7. ScanPilot membuat kode pairing untuk client.
-8. ScanPilot menjalankan host service LAN.
+2. PrintStudio cek printer lokal.
+3. PrintStudio cek scanner lokal.
+4. PrintStudio cek IP lokal dan port service.
+5. PrintStudio cek firewall.
+6. PrintStudio menampilkan status siap/tidak siap.
+7. PrintStudio membuat kode pairing untuk client.
+8. PrintStudio menjalankan host service LAN.
 
 Mode Client:
 
 1. User memilih `Hubungkan ke Host`.
 2. User memasukkan IP/kode pairing host.
-3. ScanPilot cek koneksi ke host.
+3. PrintStudio cek koneksi ke host.
 4. Client dapat melihat scanner/printer host.
 5. Client dapat request scan dari host.
 6. Client dapat mengambil hasil scan dari host.
@@ -307,15 +307,15 @@ Printer sharing otomatis:
 
 - Deteksi printer lokal via Windows.
 - Deteksi printer network/shared.
-- Set printer default dari ScanPilot.
-- Test print dari ScanPilot.
+- Set printer default dari PrintStudio.
+- Test print dari PrintStudio.
 - Share printer lokal bila permission cukup.
 - Tambah printer shared di client bila permission cukup.
 
 Scanner sharing otomatis:
 
-- ScanPilot tidak mengandalkan Windows scanner sharing.
-- ScanPilot membuat sharing sendiri dengan host/client LAN.
+- PrintStudio tidak mengandalkan Windows scanner sharing.
+- PrintStudio membuat sharing sendiri dengan host/client LAN.
 - Host melakukan scan via WIA/TWAIN.
 - Client menerima file hasil scan.
 
@@ -354,7 +354,7 @@ Risiko/batasan:
 
 ## 8. Alur Pengguna
 
-1. User membuka ScanPilot.
+1. User membuka PrintStudio.
 2. App mendeteksi scanner.
 3. User memilih scanner dan source ADF/Flatbed.
 4. User memilih DPI, ukuran kertas, warna.
@@ -454,8 +454,8 @@ Mitigasi:
 ### Phase 4.5 - Sharing
 
 - [x] UI info sharing printer/scanner.
-- [x] Desain mode `ScanPilot Host` untuk scanner sharing LAN.
-- [x] Desain mode `ScanPilot Client`.
+- [x] Desain mode `PrintStudio Host` untuk scanner sharing LAN.
+- [x] Desain mode `PrintStudio Client`.
 - [ ] Sharing Wizard UI.
 - [ ] Deteksi printer Windows/shared printer.
 - [ ] Deteksi IP lokal host.
@@ -464,7 +464,7 @@ Mitigasi:
 - [ ] Client connect ke host.
 - [ ] Implementasi API lokal untuk request scan.
 - [ ] Transfer hasil scan dari host ke client.
-- [ ] Printer test print dari ScanPilot.
+- [ ] Printer test print dari PrintStudio.
 - [ ] Firewall/admin helper.
 
 ### Phase 5 - OCR
@@ -495,7 +495,7 @@ Catatan installer:
 
 Sudah dibuat:
 
-- UI awal ScanPilot dengan layout sidebar, workspace, dan inspector.
+- UI awal PrintStudio dengan layout sidebar, workspace, dan inspector.
 - Form pengaturan scanner, source, DPI, warna, ukuran kertas, kompresi, OCR, dan export.
 - Service `WiaScannerService` untuk deteksi scanner WIA.
 - Styling UI modern.

@@ -1,6 +1,6 @@
 /// <reference types="vite/client" />
 
-interface ScanPilotAPI {
+interface PrintStudioAPI {
   appName: string;
   minimize: () => void;
   maximize: () => void;
@@ -20,5 +20,5 @@ interface ScanPilotAPI {
 }
 
 declare interface Window {
-  scanPilot: ScanPilotAPI;
+  scanPilot: PrintStudioAPI;
 }

@@ -19,10 +19,9 @@ export type ScanSettings = {
 export type RibbonTab =
   | "beranda"
   | "pindai"
-  | "cetak"
-  | "berbagi"
   | "ekspor"
-  | "tampilan";
+  | "cetak"
+  | "berbagi";
 
 const defaultScanSettings: ScanSettings = {
   colorMode: "Color",
@@ -66,7 +65,8 @@ export function useAppState() {
   const [theme, setTheme] = useState<"light" | "dark">(() => {
     if (typeof window !== "undefined") {
       return (
-        (localStorage.getItem("scanpilot-theme") as "light" | "dark") || "light"
+        (localStorage.getItem("printstudio-theme") as "light" | "dark") ||
+        "light"
       );
     }
     return "light";
@@ -74,6 +74,7 @@ export function useAppState() {
   const [activeRibbonTab, setActiveRibbonTab] = useState<RibbonTab>("beranda");
   const [showStatusBar, setShowStatusBar] = useState(true);
   const [showDocTabs, setShowDocTabs] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [zoom, setZoom] = useState(100);
   const [cropMode, setCropMode] = useState(false);
 
@@ -84,6 +85,7 @@ export function useAppState() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanStatus, setScanStatus] = useState("Siap scan.");
   const [scanSource, setScanSource] = useState("Flatbed");
+  const [scanProgress, setScanProgress] = useState(0);
 
   // Print
   const [printCopies, setPrintCopies] = useState(1);
@@ -173,6 +175,8 @@ export function useAppState() {
     setShowStatusBar,
     showDocTabs,
     setShowDocTabs,
+    sidebarOpen,
+    setSidebarOpen,
     zoom,
     setZoom,
     cropMode,
@@ -188,6 +192,8 @@ export function useAppState() {
     setScanStatus,
     scanSource,
     setScanSource,
+    scanProgress,
+    setScanProgress,
     // Print
     printCopies,
     setPrintCopies,

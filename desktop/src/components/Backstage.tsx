@@ -105,8 +105,11 @@ export default function Backstage({
         />
         <BackstageCard
           icon={Info}
-          title="Tentang Aplikasi"
-          text="ScanPilot Studio v0.1\nElectron · React · TypeScript · FastAPI"
+          title="Tentang PrintStudio"
+          text={
+            "PrintStudio v0.2.0\n" +
+            "Aplikasi desktop untuk scan, edit, cetak, ekspor, dan berbagi printer, scanner dan dokumen lokal."
+          }
         />
       </section>
     </div>

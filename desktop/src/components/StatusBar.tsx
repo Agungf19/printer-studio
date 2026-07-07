@@ -71,8 +71,8 @@ export default function StatusBar({
         <button onClick={() => onZoomChange(zoom - 10)}>−</button>
         <input
           type="range"
-          min="50"
-          max="200"
+          min="10"
+          max="500"
           step="10"
           value={zoom}
           onChange={(e) => onZoomChange(Number(e.target.value))}

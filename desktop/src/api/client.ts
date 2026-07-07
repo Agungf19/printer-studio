@@ -84,6 +84,21 @@ export type ScanBatchResponse = {
   page_count: number;
 };
 
+export type ScanFeederPageResponse = {
+  page: ScanResponse | null;
+  done: boolean;
+};
+
+export type ScanAdfStartResponse = {
+  job_id: string;
+};
+
+export type ScanAdfPollResponse = {
+  pages: ScanResponse[];
+  done: boolean;
+  error: string | null;
+};
+
 export type PaperSize = {
   id: number;
   name: string;
@@ -137,8 +152,28 @@ export const api = {
     sendJson<ScanResponse>("/scan", "POST", payload),
   scanBatch: (payload: ScanRequest) =>
     sendJson<ScanBatchResponse>("/scan/batch", "POST", payload),
+  scanFeederPage: (payload: ScanRequest) =>
+    sendJson<ScanFeederPageResponse>("/scan/feeder-page", "POST", payload),
+  adfStart: (payload: ScanRequest) =>
+    sendJson<ScanAdfStartResponse>("/scan/adf/start", "POST", payload),
+  adfPoll: (jobId: string) =>
+    getJson<ScanAdfPollResponse>(`/scan/adf/poll/${encodeURIComponent(jobId)}`),
+  cleanupScan: (filenames: string[]) =>
+    sendJson<{ deleted: number }>("/scan/cleanup", "POST", { filenames }),
+  savePdf: (pages: string[]) =>
+    sendJson<{ pdfBase64: string }>("/save/pdf", "POST", { pages }),
+  deskew: (imageBase64: string) =>
+    sendJson<{ image: string }>("/image/deskew", "POST", {
+      image: imageBase64,
+    }),
   saveProfile: (profile: OutputProfile) =>
     sendJson<OutputProfile>("/profiles", "POST", profile),
+  updateProfile: (name: string, profile: OutputProfile) =>
+    sendJson<OutputProfile>(
+      `/profiles/${encodeURIComponent(name)}`,
+      "PUT",
+      profile,
+    ),
   deleteProfile: (name: string) =>
     sendJson<{ status: string; name: string }>(
       `/profiles/${encodeURIComponent(name)}`,
@@ -147,7 +182,7 @@ export const api = {
   sharingStatus: () => getJson<SharingStatus>("/sharing/status"),
   sharingStart: () => sendJson<SharingStatus>("/sharing/start", "POST"),
   sharingStop: () => sendJson<SharingStatus>("/sharing/stop", "POST"),
-  sharingPair: (payload: { client_name: string; pairing_code: string }) =>
+  sharingPair: (payload: { client_name: string; pairing_code: string; pin?: string }) =>
     sendJson<PairResponse>("/sharing/pair", "POST", payload),
   permissionsList: () =>
     getJson<{ items: PermissionItem[] }>("/sharing/permissions"),

@@ -18,8 +18,7 @@ interface Props {
   onSelectProfile: (name: string) => void;
   exportQuality: string;
   onExportQualityChange: (v: string) => void;
-  pdfaMode: boolean;
-  onPdfaChange: (v: boolean) => void;
+  isExporting?: boolean;
 }
 
 export default function RibbonEkspor({
@@ -33,32 +32,22 @@ export default function RibbonEkspor({
   onSelectProfile,
   exportQuality,
   onExportQualityChange,
-  pdfaMode,
-  onPdfaChange,
+  isExporting,
 }: Props) {
+  const selectedProfile = profiles.find((p) => p.name === selectedProfileName);
+  const imageFormat =
+    selectedProfile?.output_format.toUpperCase() === "JPG" ? "jpg" : "png";
+  const qualityDisabled = imageFormat !== "jpg";
+
   return (
     <RibbonContent active={active}>
       <RibbonGroup title="Ekspor">
         <RibbonBig
-          icon={FileText}
-          label="Ekspor PDF"
-          title="Ekspor halaman aktif ke PDF"
-          disabled={!hasPage}
-          onClick={() => onExport("pdf")}
-        />
-        <RibbonBig
-          icon={FileText}
-          label="Ekspor DOCX"
-          title="Ekspor halaman aktif ke DOCX"
-          disabled={!hasPage}
-          onClick={() => onExport("docx")}
-        />
-        <RibbonBig
           icon={FileImage}
-          label="Ekspor PNG/JPG"
-          title="Ekspor halaman aktif ke PNG/JPG"
-          disabled={!hasPage}
-          onClick={() => onExport("png")}
+          label="Ekspor Gambar"
+          title={`Ekspor halaman aktif sebagai ${imageFormat.toUpperCase()}`}
+          disabled={!hasPage || isExporting}
+          onClick={() => onExport(imageFormat)}
         />
       </RibbonGroup>
       <RibbonGroup title="Gabung">
@@ -95,23 +84,20 @@ export default function RibbonEkspor({
               )}
             </select>
           </RibbonField>
-          <RibbonField label="Kualitas">
+          <RibbonField label={qualityDisabled ? "Kualitas" : "Kualitas JPG"}>
             <select
               value={exportQuality}
               onChange={(e) => onExportQualityChange(e.target.value)}
+              disabled={qualityDisabled}
+              title={
+                qualityDisabled
+                  ? "PNG bersifat lossless; kualitas hanya berpengaruh pada ekspor JPG."
+                  : "Batas kualitas kompresi JPG. Target KB dapat menurunkannya otomatis."
+              }
             >
-              <option value="high">Tinggi (asli)</option>
-              <option value="medium">Sedang (kompresi)</option>
-              <option value="low">Kecil (web)</option>
-            </select>
-          </RibbonField>
-          <RibbonField label="PDF/A">
-            <select
-              value={pdfaMode ? "pdfa" : "none"}
-              onChange={(e) => onPdfaChange(e.target.value === "pdfa")}
-            >
-              <option value="none">Nonaktif</option>
-              <option value="pdfa">PDF/A-2b</option>
+              <option value="high">Tinggi</option>
+              <option value="medium">Sedang</option>
+              <option value="low">Rendah</option>
             </select>
           </RibbonField>
         </div>

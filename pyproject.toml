@@ -1,5 +1,5 @@
 [project]
-name = "scanpilot"
+name = "printstudio"
 version = "0.2.0"
 description = "Desktop scanner, compression, OCR, and document export app."
 requires-python = ">=3.10"

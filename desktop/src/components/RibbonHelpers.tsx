@@ -136,13 +136,20 @@ export function IconOnly({
   title,
   icon: Icon,
   onClick,
+  disabled,
 }: {
   title: string;
   icon: ComponentType<{ size?: number }>;
   onClick?: () => void;
+  disabled?: boolean;
 }) {
   return (
-    <button className="ps-icon-only" title={title} onClick={onClick}>
+    <button
+      className="ps-icon-only"
+      title={title}
+      onClick={onClick}
+      disabled={disabled}
+    >
       <Icon size={15} />
     </button>
   );

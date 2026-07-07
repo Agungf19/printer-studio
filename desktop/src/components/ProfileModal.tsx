@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import type { OutputProfile } from "../api/client";
 
 function SelectField({
@@ -54,6 +54,22 @@ const defaultProfile: OutputProfile = {
   ocr_language: "ind+eng",
 };
 
+function uniquePresetName(profiles: OutputProfile[]) {
+  const base = "Preset Baru";
+  const names = new Set(profiles.map((p) => p.name.toLowerCase()));
+  if (!names.has(base.toLowerCase())) return base;
+  let index = 2;
+  while (names.has(`${base} ${index}`.toLowerCase())) index += 1;
+  return `${base} ${index}`;
+}
+
+function createProfileDraft(profiles: OutputProfile[]): OutputProfile {
+  return {
+    ...defaultProfile,
+    name: uniquePresetName(profiles),
+  };
+}
+
 export default function ProfileModal({
   profiles,
   selectedProfileName,
@@ -66,20 +82,93 @@ export default function ProfileModal({
   selectedProfileName: string;
   onSelect: (name: string) => void;
   onClose: () => void;
-  onSave: (profile: OutputProfile) => Promise<void>;
+  onSave: (profile: OutputProfile, originalName?: string) => Promise<void>;
   onDelete: (name: string) => Promise<void>;
 }) {
   const activeProfile =
     profiles.find((p) => p.name === selectedProfileName) || profiles[0];
-  const [draft, setDraft] = useState<OutputProfile>(
-    activeProfile || defaultProfile,
+  const [mode, setMode] = useState<"edit" | "create">(
+    activeProfile ? "edit" : "create",
   );
+  const [draft, setDraft] = useState<OutputProfile>(
+    activeProfile || createProfileDraft(profiles),
+  );
+  const [originalName, setOriginalName] = useState<string | undefined>(
+    activeProfile?.name,
+  );
+  const [errorMessage, setErrorMessage] = useState("");
+
+  useEffect(() => {
+    if (mode === "create") return;
+    if (activeProfile) {
+      setDraft(activeProfile);
+      setOriginalName(activeProfile.name);
+    } else {
+      setDraft(createProfileDraft(profiles));
+      setOriginalName(undefined);
+      setMode("create");
+    }
+  }, [activeProfile, mode, profiles]);
 
   function selectProfile(name: string) {
+    setErrorMessage("");
     onSelect(name);
     const profile = profiles.find((p) => p.name === name);
-    if (profile) setDraft(profile);
+    if (profile) {
+      setMode("edit");
+      setDraft(profile);
+      setOriginalName(profile.name);
+    }
   }
+
+  function addProfile() {
+    setErrorMessage("");
+    setMode("create");
+    setOriginalName(undefined);
+    setDraft(createProfileDraft(profiles));
+  }
+
+  async function saveDraft() {
+    const cleanName = draft.name.trim();
+    if (!cleanName) return;
+    setErrorMessage("");
+    try {
+      await onSave(
+        { ...draft, name: cleanName },
+        mode === "edit" ? originalName : undefined,
+      );
+      setMode("edit");
+      setOriginalName(cleanName);
+      onSelect(cleanName);
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Gagal menyimpan preset.",
+      );
+    }
+  }
+
+  async function deleteDraft() {
+    if (!originalName) return;
+    setErrorMessage("");
+    try {
+      await onDelete(originalName);
+      setMode("create");
+      setOriginalName(undefined);
+      setDraft(createProfileDraft(profiles));
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error ? error.message : "Gagal menghapus preset.",
+      );
+    }
+  }
+
+  const cleanName = draft.name.trim();
+  const nameIsDuplicate = profiles.some(
+    (p) =>
+      p.name.toLowerCase() === cleanName.toLowerCase() &&
+      (mode === "create" || p.name !== originalName),
+  );
+  const canDelete = mode === "edit" && !!originalName;
 
   return (
     <div className="ps-overlay open">
@@ -94,7 +183,9 @@ export default function ProfileModal({
               profiles.map((p) => (
                 <button
                   key={p.name}
-                  className={p.name === draft.name ? "active" : ""}
+                  className={
+                    mode === "edit" && p.name === originalName ? "active" : ""
+                  }
                   onClick={() => selectProfile(p.name)}
                 >
                   {p.name}
@@ -102,9 +193,7 @@ export default function ProfileModal({
               ))
             )}
           </div>
-          <button onClick={() => setDraft(defaultProfile)}>
-            Tambah Preset
-          </button>
+          <button onClick={addProfile}>Tambah Preset</button>
         </aside>
         <section>
           <header>
@@ -128,13 +217,13 @@ export default function ProfileModal({
               }
             />
             <SelectField
-              label="Format"
-              value={draft.output_format}
-              options={["PNG", "JPG", "PDF", "PDF/A", "DOCX", "TXT"]}
+              label="Format Gambar"
+              value={draft.output_format === "JPG" ? "JPG" : "PNG"}
+              options={["PNG", "JPG"]}
               onChange={(o) => setDraft({ ...draft, output_format: o })}
             />
             <SelectField
-              label="Kualitas"
+              label="Kualitas Default"
               value={draft.quality}
               options={["Auto", "High", "Medium", "Low"]}
               onChange={(q) => setDraft({ ...draft, quality: q })}
@@ -142,7 +231,7 @@ export default function ProfileModal({
             <SelectField
               label="DPI"
               value={String(draft.dpi)}
-              options={["150", "200", "300", "600"]}
+              options={["75", "150", "200", "300", "600", "1200"]}
               onChange={(d) => setDraft({ ...draft, dpi: Number(d) })}
             />
             <SelectField
@@ -151,29 +240,28 @@ export default function ProfileModal({
               options={["Color", "Grayscale", "Black & White"]}
               onChange={(c) => setDraft({ ...draft, color_mode: c })}
             />
-            <SelectField
-              label="Ukuran Kertas"
-              value={draft.paper_size}
-              options={["A4", "Letter", "Legal", "F4/Folio", "B5", "A5"]}
-              onChange={(p) => setDraft({ ...draft, paper_size: p })}
-            />
           </div>
+          {errorMessage && <p className="ps-profile-error">{errorMessage}</p>}
           <footer>
             <button
               className="danger"
-              disabled={!draft.name}
-              onClick={() => void onDelete(draft.name)}
+              disabled={!canDelete}
+              onClick={() => void deleteDraft()}
             >
               Hapus Preset
             </button>
             <span />
-            <button onClick={onClose}>Batal</button>
             <button
               className="blue"
-              disabled={!draft.name.trim()}
-              onClick={() => void onSave(draft)}
+              disabled={!cleanName || nameIsDuplicate}
+              onClick={() => void saveDraft()}
+              title={
+                nameIsDuplicate
+                  ? "Nama preset sudah dipakai"
+                  : "Simpan preset"
+              }
             >
-              Simpan Preset
+              {mode === "create" ? "Tambah Preset" : "Simpan Preset"}
             </button>
           </footer>
         </section>

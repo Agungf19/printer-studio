@@ -93,7 +93,7 @@ def _export_pdf(source_path: Path, stem: str, quality: str, pdfa: bool) -> FileR
             with pikepdf.open(str(output_path)) as pdf:
                 # Set PDF/A metadata
                 with pdf.open_metadata() as meta:
-                    meta["pdf:Producer"] = "ScanPilot"
+                    meta["pdf:Producer"] = "PrintStudio"
                 pdf.save(str(output_path))
         except ImportError:
             logger.warning("pikepdf not available — skipping PDF/A")

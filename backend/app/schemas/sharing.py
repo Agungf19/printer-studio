@@ -1,6 +1,8 @@
 from __future__ import annotations
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
+
+from app.schemas.scanner import ScanRequest
 
 
 class SharingStatusResponse(BaseModel):
@@ -17,6 +19,7 @@ class SharingStatusResponse(BaseModel):
 class PairRequest(BaseModel):
     client_name: str = "Client"
     pairing_code: str
+    pin: str = ""
 
 
 class PairResponse(BaseModel):
@@ -55,3 +58,36 @@ class PinRequest(BaseModel):
 class PinResponse(BaseModel):
     has_pin: bool
     pin: str = ""
+
+
+class RemoteScanRequest(ScanRequest):
+    token: str
+
+
+class RemoteScanPage(BaseModel):
+    filename: str
+    mime: str
+    data_base64: str
+    ocr_text: str = ""
+
+
+class RemoteScanResponse(BaseModel):
+    pages: list[RemoteScanPage]
+    page_count: int
+
+
+class RemotePrintRequest(BaseModel):
+    token: str
+    filename: str
+    file_base64: str
+    printer_name: str = ""
+
+
+class RemotePrintResponse(BaseModel):
+    status: str
+    message: str
+    printer_name: str = ""
+
+
+class RemoteDeviceResponse(BaseModel):
+    items: list[dict] = Field(default_factory=list)

@@ -1,6 +1,10 @@
-# ScanPilot
+# PrintStudio
 
-ScanPilot adalah aplikasi desktop Windows untuk scanning dokumen, kompresi hasil scan, konversi format, penggabungan file, dan OCR.
+PrintStudio adalah aplikasi desktop Windows untuk scan, edit, cetak, ekspor, kompresi, penggabungan, dan berbagi dokumen secara lokal.
+
+Versi saat ini: `v0.2.0`.
+
+Rekomendasi format versi: gunakan SemVer `vMAJOR.MINOR.PATCH`, misalnya `v0.2.0`, `v0.2.1`, atau `v1.0.0`.
 
 ## Tujuan
 

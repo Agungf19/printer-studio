@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 
 interface ShortcutHandlers {
   handleSave: () => void;
+  handleSaveAs: () => void;
   handleOpen: () => void;
   handleNew: () => void;
   handlePrint: () => void;
@@ -10,6 +11,9 @@ interface ShortcutHandlers {
   handleCut: () => void;
   handleExport: () => void;
   handleDelete: () => void;
+  handleDuplicate: () => void;
+  handleUndo: () => void;
+  handleRedo: () => void;
   closeModals: () => void;
 }
 
@@ -32,6 +36,35 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       }
 
       if (event.key === "Escape") ref.current.closeModals();
+      if (
+        isCtrl &&
+        event.shiftKey &&
+        (event.key === "z" || event.key === "Z")
+      ) {
+        event.preventDefault();
+        ref.current.handleRedo();
+        return;
+      }
+      if (isCtrl && (event.key === "z" || event.key === "Z")) {
+        event.preventDefault();
+        ref.current.handleUndo();
+        return;
+      }
+      if (isCtrl && (event.key === "y" || event.key === "Y")) {
+        event.preventDefault();
+        ref.current.handleRedo();
+        return;
+      }
+      // Ctrl+Shift+S = Simpan Sebagai (dicek sebelum Ctrl+S biasa).
+      if (
+        isCtrl &&
+        event.shiftKey &&
+        (event.key === "s" || event.key === "S")
+      ) {
+        event.preventDefault();
+        ref.current.handleSaveAs();
+        return;
+      }
       if (isCtrl && event.key === "s") {
         event.preventDefault();
         ref.current.handleSave();
@@ -59,6 +92,10 @@ export function useKeyboardShortcuts(handlers: ShortcutHandlers) {
       if (isCtrl && event.key === "x") {
         event.preventDefault();
         ref.current.handleCut();
+      }
+      if (isCtrl && (event.key === "d" || event.key === "D")) {
+        event.preventDefault();
+        ref.current.handleDuplicate();
       }
       if (isCtrl && event.key === "e") {
         event.preventDefault();

@@ -1,0 +1,10 @@
+{
+  "name": "SIAK",
+  "target_size_kb": 160,
+  "output_format": "JPG",
+  "quality": "High",
+  "dpi": 1200,
+  "color_mode": "Color",
+  "paper_size": "A4",
+  "ocr_language": "ind+eng"
+}

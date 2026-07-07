@@ -1,12 +1,22 @@
 import {
+  ChevronDown,
+  ChevronUp,
   Clipboard,
   Copy,
-  Scissors,
+  Crop,
   FilePlus2,
   FolderOpen,
-  Save,
-  RotateCw,
-  RotateCcw,
+  Hand,
+  Maximize2,
+  MoveHorizontal,
+  RefreshCw,
+  RotateCcwSquare,
+  RotateCwSquare,
+  Search,
+  Scissors,
+  Trash2,
+  ZoomIn,
+  ZoomOut,
 } from "lucide-react";
 import {
   RibbonContent,
@@ -24,10 +34,24 @@ interface Props {
   onCopy: () => void;
   onNew: () => void;
   onOpen: () => void;
-  onSave: () => void;
   onRotate: (deg: number) => void;
   cropMode: boolean;
   onToggleCrop: () => void;
+  hasSelection: boolean;
+  onDuplicate: () => void;
+  onDeleteObject: () => void;
+  onBringForward: () => void;
+  onSendBackward: () => void;
+  zoom: number;
+  onZoom: (v: number) => void;
+  panMode: boolean;
+  onTogglePan: () => void;
+  onFitWidth: () => void;
+  onFitPage: () => void;
+  showStatusBar: boolean;
+  onShowStatusBar: (v: boolean) => void;
+  showDocTabs: boolean;
+  onShowDocTabs: (v: boolean) => void;
 }
 
 export default function RibbonBeranda({
@@ -38,10 +62,24 @@ export default function RibbonBeranda({
   onCopy,
   onNew,
   onOpen,
-  onSave,
   onRotate,
   cropMode,
   onToggleCrop,
+  hasSelection,
+  onDuplicate,
+  onDeleteObject,
+  onBringForward,
+  onSendBackward,
+  zoom,
+  onZoom,
+  panMode,
+  onTogglePan,
+  onFitWidth,
+  onFitPage,
+  showStatusBar,
+  onShowStatusBar,
+  showDocTabs,
+  onShowDocTabs,
 }: Props) {
   const hasPage = !!latestPage;
   return (
@@ -56,39 +94,104 @@ export default function RibbonBeranda({
       <RibbonGroup title="Dokumen">
         <RibbonBig icon={FilePlus2} label="Baru" onClick={onNew} />
         <RibbonBig icon={FolderOpen} label="Buka" onClick={onOpen} />
-        <RibbonBig
-          icon={Save}
-          label="Simpan"
-          disabled={!hasPage}
-          onClick={onSave}
-        />
       </RibbonGroup>
-      <RibbonGroup title="Putar">
+      <RibbonGroup title="Gambar">
         <RibbonBig
-          icon={RotateCw}
-          label="Putar Kanan"
-          disabled={!hasPage}
-          onClick={() => onRotate(90)}
-        />
-        <RibbonBig
-          icon={RotateCcw}
+          icon={RotateCcwSquare}
           label="Putar Kiri"
-          disabled={!hasPage}
+          disabled={!hasSelection}
           onClick={() => onRotate(-90)}
         />
         <RibbonBig
-          icon={RotateCw}
-          label="Putar 180°"
-          disabled={!hasPage}
-          onClick={() => onRotate(180)}
+          icon={RotateCwSquare}
+          label="Putar Kanan"
+          disabled={!hasSelection}
+          onClick={() => onRotate(90)}
         />
         <RibbonBig
-          icon={Scissors}
-          label="Potong"
+          icon={RefreshCw}
+          label="Putar 180°"
+          disabled={!hasSelection}
+          onClick={() => onRotate(180)}
+        />
+      </RibbonGroup>
+      <RibbonGroup title="Perbaikan">
+        <RibbonBig
+          icon={Crop}
+          label="Pangkas"
           primary={cropMode}
           disabled={!hasPage}
           onClick={onToggleCrop}
         />
+      </RibbonGroup>
+      <RibbonGroup title="Objek">
+        <RibbonBig
+          icon={Copy}
+          label="Duplikat"
+          disabled={!hasSelection}
+          onClick={onDuplicate}
+        />
+        <RibbonBig
+          icon={Trash2}
+          label="Hapus"
+          disabled={!hasSelection}
+          onClick={onDeleteObject}
+        />
+        <RibbonBig
+          icon={ChevronUp}
+          label="Maju"
+          disabled={!hasSelection}
+          onClick={onBringForward}
+        />
+        <RibbonBig
+          icon={ChevronDown}
+          label="Mundur"
+          disabled={!hasSelection}
+          onClick={onSendBackward}
+        />
+      </RibbonGroup>
+      <RibbonGroup title="Zoom">
+        <RibbonBig
+          icon={ZoomIn}
+          label="Perbesar"
+          onClick={() => onZoom(zoom + 10)}
+        />
+        <RibbonBig
+          icon={ZoomOut}
+          label="Perkecil"
+          onClick={() => onZoom(zoom - 10)}
+        />
+        <RibbonBig icon={Search} label="100%" onClick={() => onZoom(100)} />
+      </RibbonGroup>
+      <RibbonGroup title="Sesuaikan">
+        <RibbonBig icon={MoveHorizontal} label="Lebar" onClick={onFitWidth} />
+        <RibbonBig icon={Maximize2} label="Halaman" onClick={onFitPage} />
+        <RibbonBig
+          icon={Hand}
+          label="Geser"
+          primary={panMode}
+          onClick={onTogglePan}
+        />
+      </RibbonGroup>
+      <RibbonGroup title="Panel">
+        <div className="ps-check-stack">
+          <label>
+            <input
+              type="checkbox"
+              checked={showStatusBar}
+              onChange={(e) => onShowStatusBar(e.target.checked)}
+            />{" "}
+            Status Bar
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              checked={showDocTabs}
+              onChange={(e) => onShowDocTabs(e.target.checked)}
+            />{" "}
+            Tab Dokumen
+          </label>
+        </div>
       </RibbonGroup>
     </RibbonContent>
   );

@@ -1,4 +1,4 @@
-# ScanPilot Refactor V2 — Implementation Plan
+# PrintStudio Refactor V2 — Implementation Plan
 
 Terakhir diperbarui: 2026-07-04
 
@@ -10,7 +10,7 @@ Terakhir diperbarui: 2026-07-04
 
 ## Ringkasan
 
-Refactor besar ScanPilot berdasarkan diskusi dengan user:
+Refactor besar PrintStudio berdasarkan diskusi dengan user:
 
 1. **Tab restructure** — gabung Perangkat → Pindai, hapus OCR & Ekspor → rename jadi Ekspor
 2. **Hapus OCR** dari UI (backend tetap ada)
@@ -173,7 +173,7 @@ Frontend sudah punya `ProfileModal` untuk CRUD profil.
 ### 4.2 — Electron Builder
 
 - Config di `package.json` → `build` section
-- Output: `ScanPilot-Setup.exe` (NSIS installer)
+- Output: `PrintStudio-Setup.exe` (NSIS installer)
 - Include: Electron app + backend.exe + resources
 
 ---

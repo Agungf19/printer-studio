@@ -1,4 +1,4 @@
-# Setup ScanPilot
+# Setup PrintStudio
 
 ## 1. Buat virtual environment
 

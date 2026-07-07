@@ -34,3 +34,42 @@ class ScanResponse(BaseModel):
 class ScanBatchResponse(BaseModel):
     pages: list[ScanResponse]
     page_count: int
+
+
+class ScanFeederPageResponse(BaseModel):
+    page: ScanResponse | None = None
+    done: bool = False
+
+
+class ScanAdfStartResponse(BaseModel):
+    job_id: str
+
+
+class ScanAdfPollResponse(BaseModel):
+    pages: list[ScanResponse]
+    done: bool = False
+    error: str | None = None
+
+
+class ScanCleanupRequest(BaseModel):
+    filenames: list[str] = Field(default_factory=list)
+
+
+class ScanCleanupResponse(BaseModel):
+    deleted: int = 0
+
+
+class SavePdfRequest(BaseModel):
+    pages: list[str] = Field(default_factory=list)
+
+
+class SavePdfResponse(BaseModel):
+    pdfBase64: str
+
+
+class DeskewRequest(BaseModel):
+    image: str
+
+
+class DeskewResponse(BaseModel):
+    image: str

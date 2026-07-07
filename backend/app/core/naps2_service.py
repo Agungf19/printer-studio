@@ -15,6 +15,7 @@ import logging
 import re
 import shutil
 import subprocess
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -22,6 +23,9 @@ logger = logging.getLogger(__name__)
 
 SCAN_DIR = Path(__file__).resolve().parents[3] / "temp" / "scans"
 SCAN_DIR.mkdir(parents=True, exist_ok=True)
+
+# Active background ADF scan jobs, keyed by job_id.
+_adf_jobs: dict[str, dict] = {}
 
 # NAPS2 Console executable paths to check (in priority order)
 _NAPS2_PATHS = [
@@ -367,6 +371,225 @@ class Naps2ScannerService:
             logger.error("NAPS2 ADF scan failed: %s", exc)
             raise ScannerError(f"ADF scan gagal: {exc}") from exc
 
+    def scan_feeder_page(self, device: ScannerDevice, settings: ScanSettings) -> ScanResult | None:
+        """Scan a SINGLE page from the ADF/feeder.
+
+        Returns:
+            ScanResult for the scanned page, or None if the feeder is empty
+            (no more pages — this is the normal way a page-by-page loop ends).
+
+        Raises:
+            ScannerError: On a genuine scan failure (NAPS2 missing, driver error).
+        """
+        if ":" in device.id:
+            driver, device_name = device.id.split(":", 1)
+        else:
+            driver = "wia"
+            device_name = device.name
+
+        idx = len(list(SCAN_DIR.glob("feed_*.jpg"))) + 1
+        output_path = SCAN_DIR / f"feed_{idx:04d}.jpg"
+        existing_files = set(SCAN_DIR.glob("feed_*.jpg"))
+
+        args = [
+            "--noprofile",
+            "--driver", driver,
+            "--device", device_name,
+            "--source", "feeder",
+            "--dpi", str(settings.dpi),
+            "--bitdepth", _color_mode_to_naps2(settings.color_mode),
+            "--pagesize", settings.paper_size.lower(),
+            "-o", str(output_path),
+            "-f",
+            "-n", "1",  # exactly one sheet per call
+        ]
+
+        result = _run_naps2(args, timeout=60)
+
+        # Locate the produced file (base name or NAPS2 numbered variant).
+        produced: Path | None = None
+        if output_path.exists():
+            produced = output_path
+        else:
+            stem = output_path.stem
+            ext = output_path.suffix
+            numbered = [
+                f for f in SCAN_DIR.glob(f"{stem}.*{ext}")
+                if f.name != output_path.name
+            ]
+            new_files = set(SCAN_DIR.glob("feed_*.jpg")) - existing_files
+            candidates = sorted(set(numbered) | new_files)
+            if candidates:
+                produced = candidates[0]
+
+        if produced is not None:
+            if produced != output_path:
+                produced.rename(output_path)
+            logger.info("NAPS2 feeder page scanned: %s", output_path.name)
+            return ScanResult(path=output_path, mode="naps2")
+
+        # No file produced: distinguish "feeder empty" (normal) from a real error.
+        stderr = (result.stderr or "").strip()
+        stdout = (result.stdout or "").strip()
+        combined = f"{stdout}\n{stderr}".lower()
+        empty_markers = (
+            "no pages",
+            "no documents",
+            "no more pages",
+            "empty feeder",
+            "feeder is empty",
+            "tidak ada halaman",
+        )
+        if result.returncode == 0 or any(m in combined for m in empty_markers):
+            logger.info(
+                "NAPS2 feeder empty — stopping loop (rc=%d)", result.returncode
+            )
+            return None
+
+        detail = stderr or stdout or f"NAPS2 exit code {result.returncode}"
+        raise ScannerError(detail)
+
+    def start_adf_scan(self, device: ScannerDevice, settings: ScanSettings, deskew: bool = False) -> str:
+        """Start an ADF scan (all pages) as a background NAPS2 process.
+
+        Returns a job_id. Call poll_adf_scan(job_id) repeatedly to collect the
+        pages as NAPS2 writes them. A single NAPS2 session is used so every
+        sheet in the feeder is scanned reliably (repeated one-shot feeder calls
+        make some drivers report the feeder as empty after the first sheet).
+        """
+        naps2 = _find_naps2()
+
+        if ":" in device.id:
+            driver, device_name = device.id.split(":", 1)
+        else:
+            driver = "wia"
+            device_name = device.name
+
+        idx = len(list(SCAN_DIR.glob("feed_*.jpg"))) + 1
+        base = f"feed_{idx:04d}"
+        output_path = SCAN_DIR / f"{base}.jpg"
+
+        args = [
+            str(naps2),
+            "--noprofile",
+            "--driver", driver,
+            "--device", device_name,
+            "--source", "feeder",
+            "--dpi", str(settings.dpi),
+            "--bitdepth", _color_mode_to_naps2(settings.color_mode),
+            "--pagesize", settings.paper_size.lower(),
+            "-o", str(output_path),
+            "-f",
+        ]
+        if deskew:
+            args.append("--deskew")
+
+        log_path = SCAN_DIR / f".{base}.log"
+        log_fh = open(log_path, "w", encoding="utf-8", errors="replace")
+        proc = subprocess.Popen(
+            args,
+            stdout=log_fh,
+            stderr=subprocess.STDOUT,
+            creationflags=subprocess.CREATE_NO_WINDOW if hasattr(subprocess, "CREATE_NO_WINDOW") else 0,
+        )
+
+        job_id = uuid.uuid4().hex
+        _adf_jobs[job_id] = {
+            "proc": proc,
+            "base": base,
+            "ext": ".jpg",
+            "log_path": log_path,
+            "log_fh": log_fh,
+            "reported": 0,
+            "sizes": {},
+        }
+        logger.info("NAPS2 ADF job %s started (base=%s)", job_id, base)
+        return job_id
+
+    def poll_adf_scan(self, job_id: str) -> dict:
+        """Collect pages produced so far by an ADF job.
+
+        Returns {"pages": [...], "done": bool, "error": str | None}. A file is
+        only reported once it is safe to read (a newer page exists, its size has
+        stopped changing, or the process finished) so the frontend never loads a
+        half-written image.
+        """
+        job = _adf_jobs.get(job_id)
+        if job is None:
+            raise ScannerError("Job scan tidak ditemukan atau sudah selesai")
+
+        base = job["base"]
+        ext = job["ext"]
+
+        numbered = sorted(SCAN_DIR.glob(f"{base}.*{ext}"))
+        single = SCAN_DIR / f"{base}{ext}"
+        files = list(numbered)
+        if single.exists() and single not in files:
+            files.append(single)
+        files = sorted(set(files))
+
+        rc = job["proc"].poll()
+        running = rc is None
+        sizes: dict[str, int] = job["sizes"]
+
+        def _size(path: Path) -> int:
+            try:
+                return path.stat().st_size
+            except OSError:
+                return -1
+
+        if not running:
+            complete = files
+        elif files:
+            last = files[-1]
+            last_size = _size(last)
+            prev_size = sizes.get(last.name)
+            if last_size > 0 and prev_size == last_size:
+                complete = files
+            else:
+                complete = files[:-1]
+        else:
+            complete = []
+
+        for f in files:
+            sizes[f.name] = _size(f)
+
+        pages = [
+            {"path": str(f), "filename": f.name, "mode": "naps2", "ocr_text": ""}
+            for f in complete
+        ]
+        job["reported"] = len(complete)
+
+        error: str | None = None
+        done = False
+        if not running:
+            done = True
+            if not files:
+                detail = ""
+                try:
+                    detail = job["log_path"].read_text(encoding="utf-8", errors="replace").strip()
+                except OSError:
+                    detail = ""
+                combined = detail.lower()
+                empty_markers = (
+                    "no pages",
+                    "no documents",
+                    "no more pages",
+                    "empty",
+                    "feeder",
+                    "tidak ada halaman",
+                )
+                if rc not in (0, None) and not any(m in combined for m in empty_markers):
+                    error = detail or f"NAPS2 exit code {rc}"
+            try:
+                job["log_fh"].close()
+            except Exception:  # noqa: BLE001
+                pass
+            _adf_jobs.pop(job_id, None)
+            logger.info("NAPS2 ADF job %s done (rc=%s, pages=%d)", job_id, rc, len(files))
+
+        return {"pages": pages, "done": done, "error": error}
+
     def is_available(self) -> bool:
         """Check if NAPS2 is installed and accessible."""
         try:
@@ -374,3 +597,42 @@ class Naps2ScannerService:
             return True
         except ScannerError:
             return False
+
+
+def cleanup_scan_files(filenames: list[str]) -> int:
+    """Delete the named files from SCAN_DIR (basename only). Returns count deleted.
+
+    Used by the ephemeral storage mode: once a scanned page has been loaded
+    into the app's memory, its temporary file is removed so temp/scans never
+    fills up.
+    """
+    deleted = 0
+    for name in filenames:
+        safe_name = Path(name).name  # ignore any directory components
+        if not safe_name:
+            continue
+        target = SCAN_DIR / safe_name
+        try:
+            if target.exists() and target.is_file():
+                target.unlink()
+                deleted += 1
+        except OSError as exc:
+            logger.warning("cleanup: gagal menghapus %s: %s", target, exc)
+    return deleted
+
+
+def clear_scan_dir() -> int:
+    """Remove every file in SCAN_DIR. Returns count deleted.
+
+    Called on backend startup as a safety net so leftover scans from a previous
+    session (e.g. a crash) don't accumulate.
+    """
+    deleted = 0
+    for entry in SCAN_DIR.glob("*"):
+        try:
+            if entry.is_file():
+                entry.unlink()
+                deleted += 1
+        except OSError as exc:
+            logger.warning("clear_scan_dir: gagal menghapus %s: %s", entry, exc)
+    return deleted

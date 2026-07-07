@@ -1,4 +1,4 @@
-"""Network sharing service — host ScanPilot device over LAN for remote access."""
+"""Network sharing service — host PrintStudio device over LAN for remote access."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import secrets
 import socket
 import time
 import uuid
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -58,13 +58,24 @@ def _save_json(path: Path, data: dict) -> None:
 def _get_local_ip() -> str:
     """Get the local LAN IP address."""
     try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return ip
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("8.8.8.8", 80))
+            ip = s.getsockname()[0]
+            if not ip.startswith("127."):
+                return ip
     except Exception:
-        return "127.0.0.1"
+        pass
+
+    try:
+        hostname = socket.gethostname()
+        for result in socket.getaddrinfo(hostname, None, socket.AF_INET):
+            ip = result[4][0]
+            if ip and not ip.startswith("127."):
+                return ip
+    except Exception:
+        pass
+
+    return "127.0.0.1"
 
 
 def _generate_pairing_code() -> str:
@@ -77,7 +88,7 @@ class SharingService:
 
     def __init__(self) -> None:
         self._active = False
-        self._port = 8766
+        self._port = 8765
         self._pairing_code = _generate_pairing_code()
 
     def _load_clients(self) -> dict[str, Client]:
@@ -140,15 +151,18 @@ class SharingService:
         logger.info("Sharing stopped")
         return self.build_host_status()
 
-    def pair_client(self, client_name: str, pairing_code: str) -> Client:
+    def pair_client(self, client_name: str, pairing_code: str, pin: str = "") -> Client:
         if pairing_code != self._pairing_code:
             raise ValueError("Kode pairing tidak cocok")
         if not self._active:
             raise ValueError("Berbagi belum aktif")
+        saved_pin = self.get_pin()
+        if saved_pin and pin != saved_pin:
+            raise ValueError("PIN tidak cocok")
 
         token = uuid.uuid4().hex
         client = Client(
-            name=client_name,
+            name=client_name.strip() or "Client",
             token=token,
             paired_at=time.time(),
         )
@@ -161,6 +175,32 @@ class SharingService:
     def list_clients(self) -> list[Client]:
         return [c for c in self._load_clients().values() if not c.revoked]
 
+    def get_client(self, token: str) -> Optional[Client]:
+        client = self._load_clients().get(token)
+        if client is None or client.revoked:
+            return None
+        return client
+
+    def permission_level(self, client_name: str) -> str:
+        return self._load_perms().get(client_name, "scan+print")
+
+    def ensure_allowed(self, token: str, capability: str) -> Client:
+        if not self._active:
+            raise ValueError("Berbagi belum aktif")
+
+        client = self.get_client(token)
+        if client is None:
+            raise ValueError("Client belum terhubung atau akses sudah dicabut")
+
+        level = self.permission_level(client.name)
+        allowed = {
+            "scan": level in {"scan", "scan+print"},
+            "print": level in {"print", "scan+print"},
+        }
+        if not allowed.get(capability, False):
+            raise ValueError(f"Client tidak punya izin {capability}")
+        return client
+
     def revoke_client(self, token: str) -> bool:
         clients = self._load_clients()
         if token in clients:
@@ -170,8 +210,13 @@ class SharingService:
         return False
 
     def set_permission(self, client_name: str, level: str) -> None:
+        if level not in {"scan", "print", "scan+print"}:
+            raise ValueError("Level izin tidak valid")
+        normalized_name = client_name.strip()
+        if not normalized_name:
+            raise ValueError("Nama client wajib diisi")
         perms = self._load_perms()
-        perms[client_name] = level
+        perms[normalized_name] = level
         self._save_perms(perms)
 
     def list_permissions(self) -> dict[str, str]:

@@ -104,14 +104,43 @@ export function useDataLoader(params: UseDataLoaderParams) {
     }
   }
 
-  async function saveProfile(profile: OutputProfile) {
-    await api.saveProfile(profile);
+  function isMissingProfileError(error: unknown) {
+    return (
+      error instanceof Error &&
+      error.message.toLowerCase().includes("profil tidak ditemukan")
+    );
+  }
+
+  async function saveProfile(profile: OutputProfile, originalName?: string) {
+    if (originalName) {
+      if (originalName === profile.name) {
+        try {
+          await api.updateProfile(originalName, profile);
+        } catch (error) {
+          if (!isMissingProfileError(error)) throw error;
+          await api.saveProfile(profile);
+        }
+      } else {
+        await api.saveProfile(profile);
+        try {
+          await api.deleteProfile(originalName);
+        } catch (error) {
+          if (!isMissingProfileError(error)) throw error;
+        }
+      }
+    } else {
+      await api.saveProfile(profile);
+    }
     await loadData();
     setSelectedProfileName(profile.name);
   }
 
   async function deleteProfile(name: string) {
-    await api.deleteProfile(name);
+    try {
+      await api.deleteProfile(name);
+    } catch (error) {
+      if (!isMissingProfileError(error)) throw error;
+    }
     await loadData();
     setSelectedProfileName("");
   }
